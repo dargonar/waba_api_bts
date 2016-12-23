@@ -1,7 +1,10 @@
 #from config import *
+import os
 import decimal
 import requests
 import simplejson as json
+
+RPC_NODE = os.environ.get('UW_RPC_NODE', 'http://localhost:8090/rpc')
 
 class RpcError(Exception):
   def __init__(self, message, code):
@@ -16,7 +19,7 @@ API_ID = {
 }
 
 def call_rpc(api, method, *params):
-  url     = 'http://localhost:8090/rpc'
+  url     = RPC_NODE #'http://localhost:8090/rpc'
   headers = {'content-type': 'application/json'}
   auth    = ('user', 'pass')
 
@@ -37,6 +40,12 @@ def call_rpc(api, method, *params):
     raise RpcError(res['error']['message'], 6969696969)
 
 #--- new 2.x 
+def db_get_asset_holders(asset_id):
+  return call_rpc('db', 'get_asset_holders', asset_id)
+
+def db_get_key_references(key):
+  return call_rpc('db', 'get_key_references', key)
+
 def db_get_assets(assets):
   return call_rpc('db', 'get_assets', assets)
 

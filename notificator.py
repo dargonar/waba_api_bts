@@ -1,3 +1,4 @@
+import os
 import websocket
 import thread
 import time
@@ -11,6 +12,8 @@ from time import sleep
 from utils import *
 from models import *
 
+WS_NODE = os.environ.get('UW_WS_NODE', 'ws://localhost:8090/')
+
 def send_notification(account_name, message):
 
   player_id = None
@@ -22,7 +25,7 @@ def send_notification(account_name, message):
     print 'No encontre el player_id de =>', account_name
     return
   
-  print "FOUND=>", account_name, "=", player_id 
+  print "FOUND =>", account_name, "=", player_id 
   
   header = {"Content-Type": "application/json; charset=utf-8",
             "Authorization": "Basic YmFjNjg1MzctYzhlZC00ZDgzLWJjYWItZjZjY2UzOTI1Mjhl"}
@@ -48,7 +51,7 @@ def send_notification(account_name, message):
 #send_notification("matu", "Va mas platilli")
 
 def run_again():
-  ws = websocket.WebSocketApp("ws://localhost:8090/",
+  ws = websocket.WebSocketApp(WS_NODE,
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)

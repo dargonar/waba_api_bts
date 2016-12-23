@@ -82,3 +82,31 @@ class PushInfo(Base, TimestampMixin):
   id      = Column(Integer, primary_key=True)
   name    = Column(String(128), unique=True)
   push_id = Column(String(256))
+
+class Block(Base, TimestampMixin):
+  __tablename__ = 'block'
+  
+  id         = Column(Integer, primary_key=True)
+  block_id   = Column(String(256), unique=True)
+  block_num  = Column(Integer, unique=True)
+
+class Transfer(Base, TimestampMixin):
+  __tablename__ = 'transfer'
+  
+  id           = Column(Integer, primary_key=True)
+  
+  from_id      = Column(String(32))
+  from_name    = Column(String(63))
+  
+  to_id        = Column(String(32))
+  to_name      = Column(String(63))
+
+  amount       = Column(Integer)
+  amount_asset = Column(String(32))
+ 
+  fee          = Column(Integer)
+  fee_asset    = Column(String(32))
+
+  block_num    = Column(Integer)
+  trx_in_block = Column(Integer)
+  op_in_trx    = Column(Integer)

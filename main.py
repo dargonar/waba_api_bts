@@ -112,6 +112,12 @@ if __name__ == '__main__':
     print tx
     return jsonify( rpc.network_broadcast_transaction(tx) )
 
+  @app.route('/api/v1/find_account', methods=['POST'])
+  def find_account():
+    key  = request.json.get('key')
+    account_ids = set(rpc.db_get_key_references([key])[0])
+    return jsonify([real_name(a['name']) for a in rpc.db_get_accounts(list(account_ids))])
+
   @app.route('/api/v1/account/<account>', methods=['GET'])
   def get_account(account):
     return jsonify( rpc.db_get_account_by_name(TEST_PESOCIAL+account) )
