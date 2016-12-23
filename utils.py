@@ -9,6 +9,9 @@ def amount_value(amount, asset):
   d = Decimal(amount)/Decimal(10**asset['precision'])
   return str(d)
 
+def object_id(obj_id):
+  return int(obj_id.split('.')[-1])
+
 def real_name(name):
   if name.startswith(ACCOUNT_PREFIX):
     name = name[len(ACCOUNT_PREFIX):]

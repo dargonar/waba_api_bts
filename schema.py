@@ -215,7 +215,7 @@ class Query(graphene.ObjectType):
     account_name = args.get('name')
     if not account_name: raise
 
-    account_id = cache.get_account_id(TEST_PESOCIAL + account_name)
+    account_id = cache.get_account_id(ACCOUNT_PREFIX + account_name)
     return Account(cache.get_account(account_id))
 
 

@@ -18,7 +18,7 @@ import simplejson as json
 from graphql.execution.executors.gevent import GeventExecutor
 #from graphql.execution.executors.thread import ThreadExecutor
 
-#TEST_PESOCIAL = '' 
+#ACCOUNT_PREFIX = '' 
 from memcache import Client
 import rpc
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         return { "amount": int(a*10000), "asset_id" : "1.3.1004" }
       
       print req.get('from')
-      _from  = rpc.db_get_account_by_name( TEST_PESOCIAL + req.get('from') )['id']
+      _from  = rpc.db_get_account_by_name( ACCOUNT_PREFIX + req.get('from') )['id']
       to     = req.get('to')
       amount = build_amount ( req.get('amount') )
       memo   = req.get('memo')
@@ -120,16 +120,16 @@ if __name__ == '__main__':
 
   @app.route('/api/v1/account/<account>', methods=['GET'])
   def get_account(account):
-    return jsonify( rpc.db_get_account_by_name(TEST_PESOCIAL+account) )
+    return jsonify( rpc.db_get_account_by_name(ACCOUNT_PREFIX+account) )
   
   @app.route('/api/v1/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
     
     res = []
-    for tmp in rpc.db_lookup_accounts(TEST_PESOCIAL + search, 10):
-      if tmp[0].startswith(TEST_PESOCIAL):
-        tmp[0] = tmp[0][len(TEST_PESOCIAL):]
+    for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
+      if tmp[0].startswith(ACCOUNT_PREFIX):
+        tmp[0] = tmp[0][len(ACCOUNT_PREFIX):]
 
         print tmp[0], search
         if tmp[0].startswith(search):
@@ -140,7 +140,7 @@ if __name__ == '__main__':
   def register():
     try:
       req = request.json
-      name   = TEST_PESOCIAL + str( req.get('name') )
+      name   = ACCOUNT_PREFIX + str( req.get('name') )
       owner  = str( req.get('owner') )
       active = str( req.get('active') )
       memo   = str( req.get('memo') )

@@ -90,8 +90,19 @@ class Block(Base, TimestampMixin):
   block_id   = Column(String(256), unique=True)
   block_num  = Column(Integer, unique=True)
 
+class AccountBalance(Base, TimestampMixin):
+  __tablename__ = 'account_balance'
+  
+  id            = Column(Integer, primary_key=True)
+  account_id    = Column(String(32))
+  account_name  = Column(String(63))
+  asset_id      = Column(String(32))
+  amount        = Column(BigInteger, default=0)
+
 class Transfer(Base, TimestampMixin):
   __tablename__ = 'transfer'
+  
+  block_id     = Column(Integer, ForeignKey("block.id", ondelete="CASCADE"), nullable=False) 
   
   id           = Column(Integer, primary_key=True)
   
@@ -101,12 +112,14 @@ class Transfer(Base, TimestampMixin):
   to_id        = Column(String(32))
   to_name      = Column(String(63))
 
-  amount       = Column(Integer)
+  amount       = Column(BigInteger)
   amount_asset = Column(String(32))
  
   fee          = Column(Integer)
   fee_asset    = Column(String(32))
 
+  timestamp    = Column(DateTime) 
+  
   block_num    = Column(Integer)
   trx_in_block = Column(Integer)
   op_in_trx    = Column(Integer)

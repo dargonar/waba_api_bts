@@ -14,8 +14,8 @@ class RpcError(Exception):
 
 API_ID = {
   'db'      : 0,
-  'network' : 2,
-  'history' : 3,
+  'network' : 1,
+  'history' : 2,
 }
 
 def call_rpc(api, method, *params):
@@ -55,6 +55,9 @@ def db_get_block_header(block_num):
 def db_get_block(block_num):
   return call_rpc('db', 'get_block', block_num)
 
+def db_get_blocks(block_num_from, block_num_to):
+  return call_rpc('db', 'get_blocks', block_num_from, block_num_to)
+
 def db_get_accounts(account_ids):
   return call_rpc('db', 'get_accounts', account_ids)
 
@@ -93,4 +96,7 @@ def network_broadcast_transaction(tx):
   return call_rpc('network', 'broadcast_transaction', tx)
 
 def participation_rate():
-  return bin(int(db_get_dynamic_global_properties()['recent_slots_filled'])).count('1')*100.0/128.0
+  return calc_participation_rate(int(db_get_dynamic_global_properties()['recent_slots_filled']))
+
+def calc_participation_rate(recent_slots_filled):
+  return bin(recent_slots_filled).count('1')*100.0/128.0
