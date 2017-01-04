@@ -107,8 +107,8 @@ def multisig_set_overdraft(accounts_to_issue):
   assert( len(ops) > 0 ), "No hay operaciones parar realizar"
   #print json.dumps(ops, indent=2)
   #return
-  #set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
-  res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
+  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 def multisig_delete_proposal(proposal_id):
   init([])
@@ -136,16 +136,25 @@ def WARNING_multisig_bring_them_all_proposal():
     if u['name'] == 'gobierno-par': continue
     if u['amount'] == 0: continue
     ops.extend( 
-      override_transfer( 
+      account_whitelist(
+        account_id('gobierno-par'),
+        u['account_id'],
+        1 #insert into white list
+      ) + override_transfer( 
         account_id('gobierno-par'), 
         u['account_id'], 
         account_id('gobierno-par'),
         assets['DESCUBIERTOPAR'], 
         Decimal(amount_value(u['amount'], assets['DESCUBIERTOPAR']))
+      ) + account_whitelist(
+        account_id('gobierno-par'),
+        u['account_id'],
+        1 #insert into white list
       )
     )
-  
-  res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
+  print json.dumps(ops, indent=2)
+  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
   #print json.dumps(ops, indent=2)
 
 def multisig_change_government_active(active):
@@ -167,8 +176,8 @@ def multisig_reserve_asset(assets_to_reserve):
       asset_reserve(account_id('gobierno-par'), assets[assets_to_reserve[j]], amount)
     )
   
-  #set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']])
-  res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
+  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 def multisig_claim_fees(assets_to_claim):
   init([])
@@ -190,7 +199,8 @@ def multisig_claim_fees(assets_to_claim):
       asset_claim_fees(account_id('gobierno-par'), asset, amount)
     )
   
-  res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
+  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 if __name__ == '__main__':
   #pass
@@ -223,13 +233,13 @@ if __name__ == '__main__':
   
   
   #multisig_claim_fees(["MONEDAPAR","DESCUBIERTOPAR"])
-  #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
+  multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
-  accounts_to_issue = {
-    "matias" : 0, 
-#     "testtest.pepita3" : 500, 
-#     "testtest.pepita4" : 750,
-#     "matu"             : 2500
-  }
-  multisig_set_overdraft(accounts_to_issue)
+#   accounts_to_issue = {
+#     "matias" : 1200, 
+# #     "testtest.pepita3" : 500, 
+# #     "testtest.pepita4" : 750,
+# #     "matu"             : 2500
+#   }
+#   multisig_set_overdraft(accounts_to_issue)
   
