@@ -2,6 +2,8 @@ import os
 import websocket
 import thread
 import time
+import traceback
+import logging
 
 import requests
 import json
@@ -68,7 +70,8 @@ def on_message(ws, message):
 
       try :
         block = rpc.db_get_block( int(block_id[0:8], 16) )
-        
+        if not block: continue
+
         to_ids   = []
         from_ids = []
         amounts  = []
@@ -97,6 +100,8 @@ def on_message(ws, message):
       
       except Exception as ex:
         print ex
+        logging.error(traceback.format_exc())
+
   #     #print 'pidiendo bloque => ', int(block_id[0:8], 16)
   #     ws.send(
   #       json.dumps( {"id":1000, "method":"call", "params":[0, "get_block", []]} )

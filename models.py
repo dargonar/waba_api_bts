@@ -99,6 +99,13 @@ class AccountBalance(Base, TimestampMixin):
   asset_id      = Column(String(32))
   amount        = Column(BigInteger, default=0)
 
+  def to_dict(self):
+    return {
+      'id'     : self.account_id,
+      'name'   : real_name(self.account_name),
+      'amount' : amount_value(self.amount,{'precision':4})
+    }
+
 class Transfer(Base, TimestampMixin):
   __tablename__ = 'transfer'
   

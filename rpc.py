@@ -40,6 +40,9 @@ def call_rpc(api, method, *params):
     raise RpcError(res['error']['message'], 6969696969)
 
 #--- new 2.x 
+def db_get_objects(objects):
+  return call_rpc('db', 'get_objects', objects)
+
 def db_get_asset_holders(asset_id):
   return call_rpc('db', 'get_asset_holders', asset_id)
 
@@ -48,6 +51,9 @@ def db_get_key_references(key):
 
 def db_get_assets(assets):
   return call_rpc('db', 'get_assets', assets)
+
+def db_get_full_accounts(accounts, subscribe):
+  return call_rpc('db', 'get_full_accounts', accounts, subscribe)
 
 def db_get_block_header(block_num):
   return call_rpc('db', 'get_block_header', block_num)

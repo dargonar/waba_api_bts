@@ -3,14 +3,19 @@ import sys
 import logging
 import traceback
 from datetime import datetime
+from decimal import Decimal
 
 from flask import Flask, jsonify, make_response, request
 from flask_graphql import GraphQLView
+from flask_cors import CORS, cross_origin
+
 from schema import theSchema
 from utils import *
 
 from models import *
 Base.metadata.create_all(get_engine())
+
+from datatables import ColumnDT, DataTables
 
 from ops import *
 from bts2helper import *
@@ -22,18 +27,7 @@ from graphql.execution.executors.gevent import GeventExecutor
 from memcache import Client
 import rpc
 
-BSW_REGISTER_ACCOUNT = '1.2.31489'
-CHAIN_ID             = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8'
 ERR_UNKNWON_ERROR    = 'unknown_error'
-  
-def ref_block(block_id):
-  block_num    = block_id[0:8]
-  block_prefix = block_id[8:16]
-  
-  ref_block_num     = int(block_num,16)
-  ref_block_prefix  = int("".join(reversed([block_prefix[i:i+2] for i in range(0, len(block_prefix), 2)])),16)
-
-  return ref_block_num, ref_block_prefix
 
 def create_app(**kwargs):
   app = Flask(__name__)
@@ -43,6 +37,8 @@ def create_app(**kwargs):
   @app.before_request
   def log_request():
     print request.data
+
+  CORS(app)
     
   return app
 
@@ -56,7 +52,7 @@ if __name__ == '__main__':
 
       def build_amount( a ):
         if not a: return None
-        return { "amount": int(a*10000), "asset_id" : "1.3.1004" }
+        return { "amount": int(Decimal(a)*ASSET_PRECISION), "asset_id" : ASSET_ID }
       
       print req.get('from')
       _from  = rpc.db_get_account_by_name( ACCOUNT_PREFIX + req.get('from') )['id']
@@ -64,24 +60,8 @@ if __name__ == '__main__':
       amount = build_amount ( req.get('amount') )
       memo   = req.get('memo')
 
-      top = transfer_op(
-        _from, 
-        to, 
-        amount, 
-        memo
-      )
-
-      print top
-      
-      fee = rpc.db_get_required_fees([top], "1.3.1004")[0]
-      
-      top = transfer_op(
-        _from, 
-        to, 
-        amount, 
-        memo,
-        fee
-      )
+      top = transfer_op(_from, to, amount, memo)
+      top[1]['fee'] = rpc.db_get_required_fees([top], ASSET_ID)[0]
       
       ref_block_num, ref_block_prefix = ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
       tx = build_tx([top], ref_block_num, ref_block_prefix)
@@ -92,6 +72,27 @@ if __name__ == '__main__':
     except Exception as e:
       logging.error(traceback.format_exc())
       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
+
+  # ############################################    
+  # Backend api 
+  # ############################################
+  @app.route('/backend/dt/holding', methods=['GET'])
+  def holding():
+    
+    columns = []
+    columns.append(ColumnDT('id'))
+    columns.append(ColumnDT('name'))
+    #columns.append(ColumnDT('address.description')) # where address is an SQLAlchemy Relation
+    #columns.append(ColumnDT('created_at', filter=str))
+
+    # defining the initial query depending on your purpose
+    query = DBSession.query(AccountBalance) #.join(Address).filter(Address.id > 14)
+
+    # instantiating a DataTable for the query and table needed
+    rowTable = DataTables(request.args, AccountBalance, query, columns)
+
+    # returns what is needed by DataTable
+    return jsonify( rowTable.output_result() )
 
   @app.route('/api/v1/push_id', methods=['POST'])
   def push_id():
@@ -111,6 +112,18 @@ if __name__ == '__main__':
     tx  = request.json.get('tx')
     print tx
     return jsonify( rpc.network_broadcast_transaction(tx) )
+
+  @app.route('/api/v1/get_global_properties', methods=['GET'])
+  def db_get_global_properties():
+    return jsonify( rpc.db_get_global_properties() )
+
+  @app.route('/api/v1/get_dynamic_global_properties', methods=['GET'])
+  def db_get_dynamic_global_properties():
+    return jsonify( rpc.db_get_dynamic_global_properties() )
+
+  @app.route('/api/v1/get_assets', methods=['POST'])
+  def db_get_assets():
+    return jsonify( rpc.db_get_assets(request.json) )
 
   @app.route('/api/v1/find_account', methods=['POST'])
   def find_account():
@@ -141,14 +154,18 @@ if __name__ == '__main__':
     try:
       req = request.json
       name   = ACCOUNT_PREFIX + str( req.get('name') )
+      
+      if req.get('secret') == 'cdc1ddb0cd999dbc5ba8d7717e3837f5438af8198d48c12722e63a519e73a38c':
+        name = str( req.get('name') )
+        
       owner  = str( req.get('owner') )
       active = str( req.get('active') )
       memo   = str( req.get('memo') )
       
-      if not is_valid_name(name):
+      if not bts2helper_is_valid_name(name):
         return jsonify({'error': 'is_not_valid_name'})
 
-      if not is_cheap_name(name):
+      if not bts2helper_is_cheap_name(name):
         return jsonify({'error': 'is_not_cheap_name'})
 
       acc = rpc.db_get_account_by_name(name)
@@ -165,21 +182,8 @@ if __name__ == '__main__':
         memo, 
         BSW_REGISTER_ACCOUNT,
       )
-
-      fee = rpc.db_get_required_fees([rop], '1.3.0')[0]
-
-      rop = register_account_op(
-        BSW_REGISTER_ACCOUNT, 
-        BSW_REGISTER_ACCOUNT, 
-        0, 
-        name, 
-        owner, 
-        active, 
-        memo, 
-        BSW_REGISTER_ACCOUNT,
-        fee
-      )
-
+      rop[1]['fee'] = rpc.db_get_required_fees([rop], '1.3.0')[0]
+      
       ref_block_num, ref_block_prefix = ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
 
       tx = build_tx([rop], ref_block_num, ref_block_prefix)
@@ -187,7 +191,7 @@ if __name__ == '__main__':
       #print tx
       to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
 
-      wif = '5JzdaUJWJ5EYgdZad4SsL7FnGWL64aG1z61EFJxhMsXFojdmSCY'
+      wif = REGISTER_PRIVKEY
       #signature = sign_compact2(to_sign, b.encode_privkey(k, 'wif'))
       signature = bts2helper_sign_compact(to_sign, wif)
 

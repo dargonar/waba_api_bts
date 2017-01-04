@@ -13,24 +13,13 @@ import cache
 
 from time import sleep
 from utils import *
-
+from tasks import *
 from models import *
 Base.metadata.create_all(get_engine())
 
 from bts2helper import *
 
 WS_NODE  = os.environ.get('UW_WS_NODE', 'ws://localhost:8090/')
-
-def run_again():
-  
-  ws = websocket.WebSocketApp("ws://localhost:8090/",
-    on_message = on_message,
-    on_error = on_error,
-    on_close = on_close
-  )
-
-  ws.on_open = on_open
-  ws.run_forever()  
 
 def get_my_last_block(db):
   q = db.query(Block)
@@ -46,6 +35,7 @@ def undo_block(db, block):
   return get_my_last_block(db)
 
 def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
+
   print op
   
   to_id   = op[1]['to']
@@ -71,25 +61,11 @@ def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
     op_in_trx    = op_in_trx,
     timestamp    = parse(ts)
   )
-
-  a1, is_new = get_or_create(db, AccountBalance, account_id=transfer.to_id, asset_id=ASSET_ID)
-  a1.amount += amount['amount']
-  a1.account_name = transfer.to_name
-
-  a2, is_new = get_or_create(db, AccountBalance, account_id=transfer.from_id, asset_id=ASSET_ID)
-  a2.amount -= amount['amount']
-  if transfer.fee_asset == ASSET_ID:
-    a2.amount -= fee['amount']
-  a2.account_name = transfer.from_name
-
-  return transfer, a1, a2
+  
+  return transfer
   
 
-def on_message(ws, message):
-  m = json.loads(message)
-  if not ( 'method' in m and m['method'] == 'notice' and m['params'][0] == 1 ):
-    return
-
+def do_import():
   try:
     with session_scope() as db:
       # My last block imported in DB
@@ -107,6 +83,7 @@ def on_message(ws, message):
       
       last_block_num = dgp['head_block_number']
       
+      run_update_holders = False
       while last_block_num > my_block.block_num:
         
         from_block = int(my_block.block_num+1)
@@ -135,40 +112,31 @@ def on_message(ws, message):
               for op_in_trx, op in enumerate(tx['operations']):
                 if not ( op[0] == 0 and op[1]['amount']['asset_id'] == ASSET_ID ):
                   continue
-                t,a1,a2 = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
+                t = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
                 db.add(t)
-                db.merge(a1)
-                db.merge(a2)
+                run_update_holders = True
          
           db.commit()
           my_block = new_block
+      
+      if run_update_holders:
+        update_holders(db)
+        db.commit()
 
   except Exception as ex:
     print ex
     logging.error(traceback.format_exc())
 
-def on_error(ws, error):
-  print error
-
-def on_close(ws):
-  print "### closed ###"
-  sleep(5)
-  run_again()
-
-def on_open(ws):
-  ws.send(
-    json.dumps( {"id":1, "method":"call", "params":[0, "set_block_applied_callback", [1]]} )
-  )
-
-if __name__ == "__main__":
   
-  holders = rpc.db_get_asset_holders(ASSET_ID)
+if __name__ == "__main__":
+
   with session_scope() as db:
-    for h in holders:
-      acc, is_new = get_or_create(db, AccountBalance, account_id=h['account_id'], asset_id=ASSET_ID)
-      acc.account_name = h['name']
-      acc.amount       = h['amount']
-      db.add(acc)
+    update_holders(db)
     db.commit()
-    
-  run_again()
+  
+  while True:
+    try:
+      do_import()
+      sleep(3)
+    except Exception as ex:
+      logging.error(traceback.format_exc())
