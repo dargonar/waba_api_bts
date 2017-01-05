@@ -27,6 +27,38 @@ using namespace boost;
 using namespace graphene::chain;
 using namespace graphene::utilities;
 
+std::string bts2helper_memo_encode(const std::string& priv, const std::string& pub, const std::string& message) {
+
+  auto priv_key = fc::ecc::private_key::regenerate( fc::sha256(priv) );
+  auto pub_key  = public_key_type( pub );
+
+  memo_data data;
+  data.set_message(priv_key, pub_key, message, 0);
+
+  return fc::json::to_string(data);
+}
+
+
+std::string bts2helper_memo_decode(const std::string& priv, const std::string& pub, const std::string& memo_from, const std::string& memo_to,
+                 const std::string& memo_nonce, const std::string& memo_message) {
+
+  auto priv_key = fc::ecc::private_key::regenerate( fc::sha256(priv) );
+  auto pub_key  = public_key_type( pub );
+
+  memo_data data;
+  
+  data.from    = public_key_type(memo_from);
+  data.to      = public_key_type(memo_to);
+  data.nonce   = fc::to_uint64(memo_nonce);
+  
+  auto byte_size = memo_message.length()/2;
+
+  data.message.resize(byte_size);
+  fc::from_hex(memo_message, &data.message[0], byte_size);
+  
+  return data.get_message(priv_key, pub_key);
+}
+
 std::string bts2helper_wif_to_pubkey(const std::string& wif) {
   auto pk = wif_to_key(wif);
   public_key_type pub = pk->get_public_key();

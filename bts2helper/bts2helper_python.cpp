@@ -25,5 +25,6 @@ BOOST_PYTHON_MODULE(bts2helper)
   def("bts2helper_ref_block_num"     , bts2helper_ref_block_num);
   def("bts2helper_ref_block_prefix"  , bts2helper_ref_block_prefix);
   def("bts2helper_wif_to_pubkey"     , bts2helper_wif_to_pubkey);
-  
+  def("bts2helper_memo_decode"       , bts2helper_memo_decode);
+  def("bts2helper_memo_encode"       , bts2helper_memo_encode);
 }
