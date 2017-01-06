@@ -9,3 +9,5 @@ std::string bts2helper_block_id(const std::string& signed_block_header_json);
 bool bts2helper_is_cheap_name(const std::string& name);
 bool bts2helper_is_valid_name(const std::string& name);
 std::string bts2helper_wif_to_pubkey(const std::string& wif);
+std::string bts2helper_memo_encode(const std::string& priv, const std::string& pub, const std::string& message);
+std::string bts2helper_memo_decode(const std::string& priv, const std::string& pub, const std::string& memo_from, const std::string& memo_to, const std::string& memo_nonce, const std::string& memo_message);
