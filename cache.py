@@ -1,8 +1,17 @@
 import unicodedata
 import rpc
 from memcache import Client
+import simplejson as json
 
 mc = Client(["127.0.0.1:11211"], debug=1)
+
+def get_dynamic_global_properties():
+  key = 'dgp'
+  dgp = mc.get(key)
+  if not dgp:
+    dgp = rpc.db_get_dynamic_global_properties()
+    mc.set(key, dgp, 60)
+  return dgp
 
 def get_account(account_id):
   key = '?account_%s' % account_id

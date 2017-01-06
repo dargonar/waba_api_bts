@@ -44,8 +44,12 @@ def create_app(**kwargs):
 
 if __name__ == '__main__':
   app = create_app(executor=GeventExecutor(), graphiql=True)
-
-  @app.route('/api/v1/transfer', methods=['POST'])
+  
+  @app.errorhandler(Exception)
+  def unhandled_exception(e):
+    return make_response(jsonify({'error': str(e)}), 500)
+  
+  @app.route('/api/v2/transfer', methods=['POST'])
   def transfer():
     try:
       req = request.json
@@ -94,7 +98,7 @@ if __name__ == '__main__':
     # returns what is needed by DataTable
     return jsonify( rowTable.output_result() )
 
-  @app.route('/api/v1/push_id', methods=['POST'])
+  @app.route('/api/v2/push_id', methods=['POST'])
   def push_id():
     with session_scope() as db:
       pi, is_new = get_or_create(db, PushInfo,
@@ -107,35 +111,34 @@ if __name__ == '__main__':
     
     return jsonify( 'ok' )
 
-  @app.route('/api/v1/push_tx', methods=['POST'])
+  @app.route('/api/v2/push_tx', methods=['POST'])
   def push_tx():
     tx  = request.json.get('tx')
     print tx
-    return jsonify( rpc.network_broadcast_transaction(tx) )
+    rpc.network_broadcast_transaction(tx)
+    return jsonify( {'ok':'ok'} )
 
-  @app.route('/api/v1/get_global_properties', methods=['GET'])
+  @app.route('/api/v2/get_global_properties', methods=['GET'])
   def db_get_global_properties():
     return jsonify( rpc.db_get_global_properties() )
 
-  @app.route('/api/v1/get_dynamic_global_properties', methods=['GET'])
-  def db_get_dynamic_global_properties():
-    return jsonify( rpc.db_get_dynamic_global_properties() )
+#   @app.route('/api/v2/welcome', methods=['GET'])
+#   def welcome():
+#     props = rpc.db_get_global_properties()
+#     asset = rpc.db_get_assets([ASSET_ID])[0]
+#     return jsonify({'props':props, 'asset':asset})
 
-  @app.route('/api/v1/get_assets', methods=['POST'])
-  def db_get_assets():
-    return jsonify( rpc.db_get_assets(request.json) )
-
-  @app.route('/api/v1/find_account', methods=['POST'])
+  @app.route('/api/v2/find_account', methods=['POST'])
   def find_account():
     key  = request.json.get('key')
     account_ids = set(rpc.db_get_key_references([key])[0])
     return jsonify([real_name(a['name']) for a in rpc.db_get_accounts(list(account_ids))])
 
-  @app.route('/api/v1/account/<account>', methods=['GET'])
+  @app.route('/api/v2/account/<account>', methods=['GET'])
   def get_account(account):
     return jsonify( rpc.db_get_account_by_name(ACCOUNT_PREFIX+account) )
   
-  @app.route('/api/v1/searchAccount', methods=['GET'])
+  @app.route('/api/v2/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
     
@@ -149,7 +152,7 @@ if __name__ == '__main__':
           res.append( tmp )
     return jsonify( res )
 
-  @app.route('/api/v1/register', methods=['POST'])
+  @app.route('/api/v2/register', methods=['POST'])
   def register():
     try:
       req = request.json
@@ -173,14 +176,24 @@ if __name__ == '__main__':
         return jsonify({'error': 'already_taken'})
 
       rop = register_account_op(
-        BSW_REGISTER_ACCOUNT, 
-        BSW_REGISTER_ACCOUNT, 
-        0, 
+        PROPUESTA_PAR_ID, 
+        GOBIERO_PAR_ID, 
+        100, 
         name, 
-        owner, 
-        active, 
+        {
+          'weight_threshold' : 1,
+          'account_auths'    : [[GOBIERO_PAR_ID,1]],
+          'key_auths'        : [[owner,1]], 
+          'address_auths'    : []
+        },
+        {
+          'weight_threshold' : 1,
+          'account_auths'    : [],
+          'key_auths'        : [[active,1]], 
+          'address_auths'    : []
+        },
         memo, 
-        BSW_REGISTER_ACCOUNT,
+        GOBIERO_PAR_ID,
       )
       rop[1]['fee'] = rpc.db_get_required_fees([rop], '1.3.0')[0]
       
@@ -207,4 +220,4 @@ if __name__ == '__main__':
   def not_found(error):
     return make_response(jsonify({'error': 'not_found'}), 404)
   
-  app.run(host="0.0.0.0", port=os.environ.get("PORT",8080))
+  app.run(host="127.0.0.1", port=os.environ.get("PORT",8080))

@@ -4,7 +4,7 @@ import decimal
 import requests
 import simplejson as json
 
-RPC_NODE = os.environ.get('UW_RPC_NODE', 'http://localhost:8090/rpc')
+RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:8090/rpc')
 
 class RpcError(Exception):
   def __init__(self, message, code):

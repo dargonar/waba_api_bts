@@ -123,18 +123,8 @@ def register_account_op(registrar, referrer, referrer_percent, name, owner, acti
     'referrer'          : referrer,
     'referrer_percent'  : referrer_percent,
     'name'              : name,
-    'owner' : {
-      'weight_threshold' : 1,
-      'account_auths'    : [], #[[GOBIERO_PAR_ID,1]],
-      'key_auths'        : [[owner, 1]], 
-      'address_auths'    : []
-    },
-    'active' : {
-      'weight_threshold' : 1,
-      'account_auths'    : [],
-      'key_auths'        : [[active, 1]], 
-      'address_auths'    : []
-    },
+    'owner'             : owner,
+    'active'            : active,
     'options' : {
       'memo_key'       : memo,
       'voting_account' : voting_account

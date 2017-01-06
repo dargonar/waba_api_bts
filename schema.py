@@ -5,7 +5,7 @@ import cache
 
 from decimal import Decimal
 from utils import *
-
+import simplejson as json
 
 # class AuthorizationMiddleware(object):
 #   def resolve(self, next, root, args, context, info):
@@ -14,6 +14,18 @@ from utils import *
 #         return None
 #     return next(root, args, context, info)
 
+class Blockchain(graphene.ObjectType):
+  ref_block_num    = graphene.String()
+  ref_block_prefix = graphene.String()
+
+  def resolve_ref_block_num(self, args, context, info):
+    ref_block_num, ref_block_prefix = ref_block(cache.get_dynamic_global_properties()['head_block_id'])
+    return ref_block_num
+
+  def resolve_ref_block_prefix(self, args, context, info):
+    ref_block_num, ref_block_prefix = ref_block(cache.get_dynamic_global_properties()['head_block_id'])
+    return ref_block_prefix
+  
 class Amount(graphene.ObjectType):
   quantity = graphene.String()
   asset    = graphene.Field(lambda:Asset)
@@ -59,11 +71,10 @@ class Operation(graphene.Interface):
   block     = graphene.Field(Block)
 
   def resolve_id(self, args, context, info):
-    return self.op['info']['id']
+    return self.oph['id']
 
-  #@graphene.with_context
   def resolve_block(self, args, context, info):
-    block = cache.get_block_header(self.op['info']['block_num'])
+    block = cache.get_block_header(self.oph['block_num'])
     return Block(
       previous                = block['previous'],
       timestamp               = block['timestamp'],
@@ -87,12 +98,122 @@ class Operation(graphene.Interface):
 class NoDetailOp(graphene.ObjectType):
   name = graphene.String()
 
-  def __init__(self, op):
-    self.op = op
+  def __init__(self, oph):
+    self.oph = oph
+    self.op  = oph['op'][1]
 
   class Meta:
     interfaces = (Operation, )
 
+class OverdraftChange(graphene.ObjectType):
+
+  amount = graphene.Field(lambda:Amount)
+  type   = graphene.String()
+  
+  def __init__(self, ops):
+    self.ops   = ops
+    self.oph   = ops[1].oph
+    self.op    = ops[1].oph['op'][1]
+    self.otype = 'down' if  ops[1].oph['op'][0] == 38 else 'up'
+    
+  class Meta:
+    interfaces = (Operation, )
+
+  def resolve_amount(self, args, context, info):
+    tmp  = self.op['asset_to_issue'] if 'asset_to_issue' in self.op else self.op['amount']
+    asset = cache.get_asset(tmp['asset_id'])
+    return Amount(
+      quantity = amount_value( str(tmp['amount']), asset),
+      asset    = Asset(asset)
+    )
+  
+  def resolve_type(self, args, context, info):
+    return self.otype
+
+  def resolve_ops(self, args, context, info):
+    return self.ops
+    
+class AssetIssue(graphene.ObjectType):
+
+  issuer           = graphene.Field(lambda:Account)
+  asset_to_issue   = graphene.Field(lambda:Asset)
+  issue_to_account = graphene.Field(lambda:Account)
+
+  def __init__(self, oph):
+    self.oph = oph
+    self.op  = oph['op'][1]
+
+  class Meta:
+    interfaces = (Operation, )
+
+  def resolve_issuer(self, args, context, info):
+    return Account( cache.get_account(self.op['issuer']) )
+
+  def resolve_asset_to_issue(self, args, context, info):
+    return Asset( cache.get_asset(self.op['asset_to_issue']) )
+
+  def resolve_issue_to_account(self, args, context, info):
+    return Account( cache.get_asset(self.op['issue_to_account']) )
+
+  
+class OverrideTransfer(graphene.ObjectType):
+
+  from_       = graphene.Field(lambda:Account, name='from')
+  to          = graphene.Field(lambda:Account)
+  amount      = graphene.Field(Amount)
+  memo        = graphene.Field(Memo)
+
+  def __init__(self, oph):
+    self.oph = oph
+    self.op  = oph['op'][1]
+
+  class Meta:
+    interfaces = (Operation, )
+
+  def resolve_from_(self, args, context, info):
+    return Account( cache.get_account(self.op['from']) )
+
+  def resolve_to(self, args, context, info):
+    return Account( cache.get_account(self.op['to']) )
+
+  def resolve_amount(self, args, context, info):
+    asset = cache.get_asset(self.op['amount']['asset_id'])
+    return Amount(
+      quantity = amount_value( str(self.op['amount']['amount']), asset),
+      asset    = Asset(asset)
+    )
+
+  def resolve_memo(self, args, context, info):
+    if not 'memo' in self.op: return None
+    return Memo(
+      from_   = self.op['memo']['from'],
+      to      = self.op['memo']['to'],
+      nonce   = self.op['memo']['nonce'],
+      message = self.op['memo']['message']
+    )
+
+class AccountWhitelist(graphene.ObjectType):
+
+  authorizing_account = graphene.Field(lambda:Account)
+  account_to_list     = graphene.Field(lambda:Account)
+  new_listing         = graphene.String()
+
+  def __init__(self, oph):
+    self.oph = oph
+    self.op  = oph['op'][1]
+
+  class Meta:
+    interfaces = (Operation, )
+
+  def resolve_authorizing_account(self, args, context, info):
+    return Account( cache.get_account(self.op['authorizing_account']) )
+
+  def resolve_account_to_list(self, args, context, info):
+    return Account( cache.get_account(self.op['account_to_list']) )
+
+  def resolve_new_listing(self, args, context, info):
+    return self.op['new_listing']
+  
 class Transfer(graphene.ObjectType):
   from_       = graphene.Field(lambda:Account, name='from')
   to          = graphene.Field(lambda:Account)
@@ -100,21 +221,19 @@ class Transfer(graphene.ObjectType):
   memo        = graphene.Field(Memo)
   type_       = graphene.String(name='type')
 
-  def __init__(self, op):
-    self.op = op
+  def __init__(self, oph):
+    self.oph = oph
+    self.op  = oph['op'][1]
 
   class Meta:
     interfaces = (Operation, )
 
-  #@graphene.with_context
   def resolve_from_(self, args, context, info):
     return Account( cache.get_account(self.op['from']) )
 
-  #@graphene.with_context
   def resolve_to(self, args, context, info):
     return Account( cache.get_account(self.op['to']) )
 
-  #@graphene.with_context
   def resolve_amount(self, args, context, info):
     print '[START] get_asset'
     asset = cache.get_asset(self.op['amount']['asset_id'])
@@ -124,8 +243,6 @@ class Transfer(graphene.ObjectType):
       asset    = Asset(asset)
     )
 
-
-  #@graphene.with_context
   def resolve_memo(self, args, context, info):
     if not 'memo' in self.op: return None
     return Memo(
@@ -147,30 +264,28 @@ class Transfer(graphene.ObjectType):
 #@Schema.register
 class Account(graphene.ObjectType):
 
+  id      = graphene.String() 
   name    = graphene.String()
   history = graphene.List(Operation,
+   stop  = graphene.Int(),
+   limit = graphene.Int(),
    start = graphene.Int(),
-   limit = graphene.Int()
   )
-  
-  #history = graphene.List(Operation)
   
   balance = graphene.List(Amount)
 
   def __init__(self, account):
     self.account = account
 
-  #@graphene.with_context
+  def resolve_id(self, args, context, info):
+    return self.account['id']
+
   def resolve_name(self, args, context, info):
     name = self.account['name']
     return real_name(name)
   
-  #@graphene.with_context
   def resolve_balance(self, args, context, info):
     bals = rpc.db_get_account_balances(self.account['id'])
-
-    # print '******************'
-    # print bals
 
     res = []
     for b in bals:
@@ -184,33 +299,81 @@ class Account(graphene.ObjectType):
   #@graphene.with_context
   def resolve_history(self, args, context, info):
 
-    start   = int(args.get('start', 0))
+    stop    = int(args.get('stop', 0))
     limit   = int(args.get('limit', 10))
+    start   = int(args.get('start', 0))
 
     print '[START] ws.history_get_relative_account_history '
-    ops = rpc.history_get_relative_account_history(self.account['id'], 0, limit, start)
+    ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
     print '[START] ws.history_get_relative_account_history '
 
     history = []
 
-    for tmp in ops:
-      op = tmp['op']
+    in_overdraft_change = False
+    sub_ops             = []
+
+    i = 0
+    while i < len(ops):
+      oph = ops[i]
+      op  = oph['op']
       
-      op[1]['info'] = tmp
+      if op[0] == 0: 
+        history.append(Transfer(oph))
+      
+      elif op[0] == 7: # Whitelist add
 
-      if op[0] == 0:
-        history.append(Transfer(op[1]))
-      else:
-        history.append(NoDetailOp(op[1]))
+        if op[1]['new_listing'] == 0 and op[1]['authorizing_account'] == GOBIERO_PAR_ID:
+          in_overdraft_change = True
+          sub_ops = [AccountWhitelist(oph)]
+        elif in_overdraft_change:
+          in_overdraft_change = False
+          sub_ops.append(AccountWhitelist(oph))
+          history.append(OverdraftChange(list(sub_ops)))
+          sub_ops = []
 
+      elif op[0] == 14 and in_overdraft_change:  # Asset Issue
+        sub_ops.append(AssetIssue(oph))
+
+#       elif op[0] == 15 and in_overdraft_change: # Asset Reserve
+#         sub_ops.append(AssetReserve(oph))
+        
+      elif op[0] == 38 and in_overdraft_change: # Override Transfer
+        sub_ops.append(OverrideTransfer(oph))
+        
+      else : history.append(NoDetailOp(oph))
+    
+      i = i + 1
+      
     return history
 
 class Query(graphene.ObjectType):
+
+  fees  = graphene.String(
+    hack = graphene.String()
+  )
+  
+  blockchain = graphene.Field(Blockchain)
+  
+  asset = graphene.String(
+    id = graphene.String()
+  )
+  
   account = graphene.Field(Account, 
     name = graphene.String()
   )
 
-  #@graphene.with_context
+  def resolve_blockchain(self, args, context, info):
+    return Blockchain()
+  
+  def resolve_fees(self, args, context, info):
+    if args.get('hack') == "": return ""
+    return json.dumps(rpc.db_get_global_properties()['parameters']['current_fees'])
+  
+  def resolve_asset(self, args, context, info):
+    id = args.get('id')
+    if id == "": return ""
+    return json.dumps(cache.get_asset(id))
+  
   def resolve_account(self, args, context, info):
     account_name = args.get('name')
     if not account_name: raise
@@ -219,5 +382,15 @@ class Query(graphene.ObjectType):
     return Account(cache.get_account(account_id))
 
 
-theSchema = graphene.Schema(query=Query, types=[NoDetailOp, Transfer])
+theSchema = graphene.Schema(
+  query=Query, 
+  types=[
+    NoDetailOp, 
+    Transfer, 
+    OverdraftChange,
+    AccountWhitelist, 
+    OverrideTransfer,
+    AssetIssue
+  ]
+)
 print theSchema

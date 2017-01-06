@@ -7,7 +7,7 @@ wifs = {
  'matias'         : '5Jg4pQNnJdMboeRaFa1dQznDt2fc4GunjSLPtJZ828grKv1SxTm',
  'beto'           : '5JiF8n5nxoJX6qQ45VVtURnTBZvbPBMTb756WptAkNZGMfpgw3e',
  'marcio'         : '5K41mU4XhmbJ2ZX3fSqhoFi1iVKYcwvM3e84tKuLbKGPm5SxWPd', 
- 'propuesta-par'  : '5KGodSDeLFpzLPrk85EKaPnxCvAJK5HLaVrNbNKdS7JwuJwSNou',
+ 'propuesta-par'  : '5K5p1J9yXWpY9qvpD2CTv5VLqmda4QxqayQT2w3Q2vRW9xfVhwd',
  'petoelpatoputo' : '5HuSJENqeLwKEdJDFRahhKvdniqt4V2RZSnMSd9MrU82EhSGuhW',
  'gobierno-par'   : '',
 }
@@ -233,13 +233,13 @@ if __name__ == '__main__':
   
   
   #multisig_claim_fees(["MONEDAPAR","DESCUBIERTOPAR"])
-  multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
+  #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
-#   accounts_to_issue = {
-#     "matias" : 1200, 
-# #     "testtest.pepita3" : 500, 
-# #     "testtest.pepita4" : 750,
-# #     "matu"             : 2500
-#   }
-#   multisig_set_overdraft(accounts_to_issue)
+  accounts_to_issue = {
+    "moneda-par.matias" : 100, 
+#     "testtest.pepita3" : 500, 
+#     "testtest.pepita4" : 750,
+#     "matu"             : 2500
+  }
+  multisig_set_overdraft(accounts_to_issue)
   
