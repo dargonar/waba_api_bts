@@ -1,10 +1,25 @@
 #from config import *
 import os
+import sys
 import decimal
 import requests
 import simplejson as json
+import traceback
+import logging
+
+# import httplib as http_client
+# http_client.HTTPConnection.debuglevel = 1
+
+# # You must initialize logging, otherwise you'll not see debug output.
+# logging.basicConfig()
+# logging.getLogger().setLevel(logging.DEBUG)
+# requests_log = logging.getLogger("requests.packages.urllib3")
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
+
 
 RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:8090/rpc')
+# print 'using RPC @ ', RPC_NODE
 
 class RpcError(Exception):
   def __init__(self, message, code):
@@ -13,32 +28,46 @@ class RpcError(Exception):
     self.code = code
 
 API_ID = {
-  'db'      : 0,
-  'network' : 1,
-  'history' : 2,
+  'db'      : "database",
+  'network' : "network_broadcast",
+  'history' : "history",
 }
 
-def call_rpc(api, method, *params):
+def call_rpc_impl(api, method, *params):
   url     = RPC_NODE #'http://localhost:8090/rpc'
-  headers = {'content-type': 'application/json'}
-  auth    = ('user', 'pass')
+  headers = {
+    'content-type'  : 'application/json',
+    'Authorization' : 'Basic Ynl0ZW1hc3RlcjpzdXBlcnNlY3JldA=='
+  }
+  
+  auth    = ('bytemaster', 'supersecret')
 
   payload2 =  {
       "method": "call",
-      "params": [API_ID[api], method] + [[p for p in params]],
+      "params": [API_ID[api], method] + [p for p in params],
       "jsonrpc": "2.0",
       "id": 10
   }
 
   r = requests.post(url, data=json.dumps(payload2), headers=headers, auth=auth, timeout=5)
+
   res = json.loads(r.text, parse_float=decimal.Decimal)
   if 'result' in res:
     return res['result']
   if 'code' in res['error']:
+    print res['error']
     raise RpcError(res['error']['message'], res['error']['code'])
   else:
     raise RpcError(res['error']['message'], 6969696969)
 
+def call_rpc(api, method, *params):
+  try:
+    return call_rpc_impl(api, method, params)
+  except Exception as e:
+    print traceback.format_exc()
+    exc_info = sys.exc_info()
+    raise exc_info[0], exc_info[1], exc_info[2]
+  
 #--- new 2.x 
 def db_get_objects(objects):
   return call_rpc('db', 'get_objects', objects)
@@ -75,6 +104,9 @@ def db_get_account_balances(account, assets=[]):
 
 def history_get_relative_account_history(account, stop=0, limit=100, start=0):
   return call_rpc('history', 'get_relative_account_history', account, stop, limit, start)
+
+def history_get_account_history(account, stop='', limit=100, start=''):
+  return call_rpc('history', 'get_account_history', account, stop, limit, start)
 
 def db_get_transaction(block_num, trx_in_block):
   return call_rpc('db', 'get_transaction', block_num, trx_in_block)

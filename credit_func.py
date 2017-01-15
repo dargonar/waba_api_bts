@@ -236,7 +236,7 @@ if __name__ == '__main__':
   #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
   accounts_to_issue = {
-    "moneda-par.matias" : 100, 
+    "moneda-par.tuti" : 100, 
 #     "testtest.pepita3" : 500, 
 #     "testtest.pepita4" : 750,
 #     "matu"             : 2500

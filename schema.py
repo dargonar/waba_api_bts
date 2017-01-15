@@ -15,8 +15,13 @@ import simplejson as json
 #     return next(root, args, context, info)
 
 class Blockchain(graphene.ObjectType):
+  
+  fees             = graphene.String()
   ref_block_num    = graphene.String()
   ref_block_prefix = graphene.String()
+
+  def resolve_fees(self, args, context, info):
+    return json.dumps(rpc.db_get_global_properties()['parameters']['current_fees'])
 
   def resolve_ref_block_num(self, args, context, info):
     ref_block_num, ref_block_prefix = ref_block(cache.get_dynamic_global_properties()['head_block_id'])
@@ -42,7 +47,6 @@ class Asset(graphene.ObjectType):
     return self.asset['id']
 
   def resolve_symbol(self, args, context, info):
-    print 'resolviendo simbolo'
     return self.asset['symbol']
 
   #@graphene.with_context
@@ -86,7 +90,6 @@ class Operation(graphene.Interface):
       #signing_key             = block['signing_key'],
     )
 
-  #@graphene.with_context
   def resolve_fee(self, args, context, info):
     asset = cache.get_asset(self.op['fee']['asset_id'])
     return Amount(
@@ -112,18 +115,42 @@ class OverdraftChange(graphene.ObjectType):
   
   def __init__(self, ops):
     self.ops   = ops
-    self.oph   = ops[1].oph
-    self.op    = ops[1].oph['op'][1]
-    self.otype = 'down' if  ops[1].oph['op'][0] == 38 else 'up'
+
+    main_op = ops[1].oph['op']
+    
+    # This is the main OP (ops[1])
+    #
+    # [ Whitelist, 
+    #   AssetIssue,  <==== this
+    #   AssetIssue, 
+    #   Whitelist ]
+    # or
+    # [ Whitelist, 
+    #   OverrideTransfer, <==== this
+    #   AssetReserve, 
+    #   OverrideTransfer, 
+    #   AssetReserve, 
+    #   Whitelist ]
+    
+    
+    
+    # Determine asset
+    self.asset = main_op[1]['asset_to_issue'] if 'asset_to_issue' in main_op[1] else main_op[1]['amount']
+    
+    # Determine type
+    self.otype = 'down' if main_op[0] == 38 else 'up'
+    
+    # Determine id (important for history)
+    self.oph = ops[0].oph
+    self.op  = ops[0].oph['op'][1]
     
   class Meta:
     interfaces = (Operation, )
 
   def resolve_amount(self, args, context, info):
-    tmp  = self.op['asset_to_issue'] if 'asset_to_issue' in self.op else self.op['amount']
-    asset = cache.get_asset(tmp['asset_id'])
+    asset = cache.get_asset(self.asset['asset_id'])
     return Amount(
-      quantity = amount_value( str(tmp['amount']), asset),
+      quantity = amount_value( str(self.asset['amount']), asset),
       asset    = Asset(asset)
     )
   
@@ -235,9 +262,7 @@ class Transfer(graphene.ObjectType):
     return Account( cache.get_account(self.op['to']) )
 
   def resolve_amount(self, args, context, info):
-    print '[START] get_asset'
     asset = cache.get_asset(self.op['amount']['asset_id'])
-    print '[END] get_asset'
     return Amount(
       quantity = amount_value( str(self.op['amount']['amount']), asset),
       asset    = Asset(asset)
@@ -267,9 +292,10 @@ class Account(graphene.ObjectType):
   id      = graphene.String() 
   name    = graphene.String()
   history = graphene.List(Operation,
-   stop  = graphene.Int(),
+   _type = graphene.String(name='type'),
+   stop  = graphene.String(),
    limit = graphene.Int(),
-   start = graphene.Int(),
+   start = graphene.String(),
   )
   
   balance = graphene.List(Amount)
@@ -286,6 +312,9 @@ class Account(graphene.ObjectType):
   
   def resolve_balance(self, args, context, info):
     bals = rpc.db_get_account_balances(self.account['id'])
+    print '**** bals ****'
+    print bals
+    print '**************'
 
     res = []
     for b in bals:
@@ -299,13 +328,28 @@ class Account(graphene.ObjectType):
   #@graphene.with_context
   def resolve_history(self, args, context, info):
 
-    stop    = int(args.get('stop', 0))
-    limit   = int(args.get('limit', 10))
-    start   = int(args.get('start', 0))
-
-    print '[START] ws.history_get_relative_account_history '
-    ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
-    print '[START] ws.history_get_relative_account_history '
+    if args.get('type') == 'relative':
+      stop    = int(args.get('stop', 0))
+      limit   = int(args.get('limit', 100))
+      start   = int(args.get('start', 0))
+    
+#       try:
+      print '[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start)
+      ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
+      print '[END] rpc.history_get_relative_account_history '
+#       except Exception as e:
+#         import traceback
+#         print traceback.format_exc()
+    else:
+      stop    = args.get('stop', '1.11.0')
+      limit   = int(args.get('limit', 100))
+      start   = args.get('start', '1.11.0')
+      
+      print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
+      ttt = rpc.history_get_account_history(self.account['id'], stop, limit, start)
+      print map(lambda x: x['id'], ttt)
+      ops = ttt
+      print '[END] rpc.history_get_account_history '
 
     history = []
 
@@ -316,6 +360,9 @@ class Account(graphene.ObjectType):
     while i < len(ops):
       oph = ops[i]
       op  = oph['op']
+      
+      print '*******************************************'
+      print oph['id']
       
       if op[0] == 0: 
         history.append(Transfer(oph))
@@ -334,13 +381,13 @@ class Account(graphene.ObjectType):
       elif op[0] == 14 and in_overdraft_change:  # Asset Issue
         sub_ops.append(AssetIssue(oph))
 
-#       elif op[0] == 15 and in_overdraft_change: # Asset Reserve
-#         sub_ops.append(AssetReserve(oph))
+      elif op[0] == 15 and in_overdraft_change: # Asset Reserve
+        sub_ops.append(AssetReserve(oph))
         
       elif op[0] == 38 and in_overdraft_change: # Override Transfer
         sub_ops.append(OverrideTransfer(oph))
         
-      else : history.append(NoDetailOp(oph))
+      #elif not in_overdraft_change : history.append(NoDetailOp(oph))
     
       i = i + 1
       
@@ -348,10 +395,6 @@ class Account(graphene.ObjectType):
 
 class Query(graphene.ObjectType):
 
-  fees  = graphene.String(
-    hack = graphene.String()
-  )
-  
   blockchain = graphene.Field(Blockchain)
   
   asset = graphene.String(
@@ -365,20 +408,16 @@ class Query(graphene.ObjectType):
   def resolve_blockchain(self, args, context, info):
     return Blockchain()
   
-  def resolve_fees(self, args, context, info):
-    if args.get('hack') == "": return ""
-    return json.dumps(rpc.db_get_global_properties()['parameters']['current_fees'])
-  
   def resolve_asset(self, args, context, info):
-    id = args.get('id')
-    if id == "": return ""
-    return json.dumps(cache.get_asset(id))
+    return json.dumps(cache.get_asset(args.get('id')))
   
   def resolve_account(self, args, context, info):
     account_name = args.get('name')
     if not account_name: raise
 
+    print 'ACA ESTYO cache.get_account_id'  
     account_id = cache.get_account_id(ACCOUNT_PREFIX + account_name)
+    print 'OSHE MIRA ', account_id  
     return Account(cache.get_account(account_id))
 
 
@@ -393,4 +432,4 @@ theSchema = graphene.Schema(
     AssetIssue
   ]
 )
-print theSchema
+#print theSchema

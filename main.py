@@ -2,10 +2,12 @@ import os
 import sys
 import logging
 import traceback
+import time
+
 from datetime import datetime
 from decimal import Decimal
 
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, jsonify, make_response, request, g
 from flask_graphql import GraphQLView
 from flask_cors import CORS, cross_origin
 
@@ -37,7 +39,18 @@ def create_app(**kwargs):
   @app.before_request
   def log_request():
     print request.data
-
+  
+  @app.before_request
+  def before_request():
+    g.start = time.time()
+  
+  @app.teardown_request
+  def teardown_request(exception=None):
+    diff = time.time() - g.start
+    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    print 'EL REQUEST TOTAL TOMO =>', diff
+    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    
   CORS(app)
     
   return app
@@ -49,33 +62,33 @@ if __name__ == '__main__':
   def unhandled_exception(e):
     return make_response(jsonify({'error': str(e)}), 500)
   
-  @app.route('/api/v2/transfer', methods=['POST'])
-  def transfer():
-    try:
-      req = request.json
+#   @app.route('/api/v2/transfer', methods=['POST'])
+#   def transfer():
+#     try:
+#       req = request.json
 
-      def build_amount( a ):
-        if not a: return None
-        return { "amount": int(Decimal(a)*ASSET_PRECISION), "asset_id" : ASSET_ID }
+#       def build_amount( a ):
+#         if not a: return None
+#         return { "amount": int(Decimal(a)*ASSET_PRECISION), "asset_id" : ASSET_ID }
       
-      print req.get('from')
-      _from  = rpc.db_get_account_by_name( ACCOUNT_PREFIX + req.get('from') )['id']
-      to     = req.get('to')
-      amount = build_amount ( req.get('amount') )
-      memo   = req.get('memo')
+#       print req.get('from')
+#       _from  = rpc.db_get_account_by_name( ACCOUNT_PREFIX + req.get('from') )['id']
+#       to     = req.get('to')
+#       amount = build_amount ( req.get('amount') )
+#       memo   = req.get('memo')
 
-      top = transfer_op(_from, to, amount, memo)
-      top[1]['fee'] = rpc.db_get_required_fees([top], ASSET_ID)[0]
+#       top = transfer_op(_from, to, amount, memo)
+#       top[1]['fee'] = rpc.db_get_required_fees([top], ASSET_ID)[0]
       
-      ref_block_num, ref_block_prefix = ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
-      tx = build_tx([top], ref_block_num, ref_block_prefix)
-      to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+#       ref_block_num, ref_block_prefix = ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
+#       tx = build_tx([top], ref_block_num, ref_block_prefix)
+#       to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
 
-      return jsonify( {'tx':tx, 'to_sign':to_sign} )
+#       return jsonify( {'tx':tx, 'to_sign':to_sign} )
       
-    except Exception as e:
-      logging.error(traceback.format_exc())
-      return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
+#     except Exception as e:
+#       logging.error(traceback.format_exc())
+#       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
 
   # ############################################    
   # Backend api 
@@ -118,9 +131,9 @@ if __name__ == '__main__':
     rpc.network_broadcast_transaction(tx)
     return jsonify( {'ok':'ok'} )
 
-  @app.route('/api/v2/get_global_properties', methods=['GET'])
-  def db_get_global_properties():
-    return jsonify( rpc.db_get_global_properties() )
+#   @app.route('/api/v2/get_global_properties', methods=['GET'])
+#   def db_get_global_properties():
+#     return jsonify( rpc.db_get_global_properties() )
 
 #   @app.route('/api/v2/welcome', methods=['GET'])
 #   def welcome():
