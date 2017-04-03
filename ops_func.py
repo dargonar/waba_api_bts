@@ -39,7 +39,7 @@ def build_tx_and_broadcast(ops, wif):
     tx['signatures'].append( bts2helper_sign_compact(to_sign, w) )
   
   print 'Broadcasting...'
-  #print json.dumps(tx, indent=2)
+  print json.dumps(tx, indent=2)
   rpc.network_broadcast_transaction(tx)
   return []
 
@@ -90,3 +90,7 @@ def asset_claim_fees(issuer, asset, amount, wif=None, pay_in=CORE_ASSET):
 def account_whitelist(authorizing_account_id, account_id_to_list, new_listing, wif=None, pay_in=CORE_ASSET):
   aw_op = account_whitelist_op(authorizing_account_id, account_id_to_list, new_listing)
   return set_fees_and_broadcast([aw_op], wif, pay_in)
+
+def withdraw_permission_create(withdraw_from_account_id, authorized_account_id, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, wif=None, pay_in=CORE_ASSET):
+  wpc_op = withdraw_permission_create_op(withdraw_from_account_id, authorized_account_id, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time)
+  return set_fees_and_broadcast([wpc_op], wif, pay_in)

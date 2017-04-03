@@ -361,7 +361,7 @@ class Account(graphene.ObjectType):
       oph = ops[i]
       op  = oph['op']
       
-      print '*******************************************'
+      print '{0}/{1}*******************************************'.format(i, len(ops))
       print oph['id']
       
       if op[0] == 0: 
@@ -391,6 +391,7 @@ class Account(graphene.ObjectType):
     
       i = i + 1
       
+    print 'voy a retornar history'
     return history
 
 class Query(graphene.ObjectType):

@@ -191,7 +191,7 @@ if __name__ == '__main__':
       rop = register_account_op(
         PROPUESTA_PAR_ID, 
         GOBIERO_PAR_ID, 
-        100, 
+        10000, 
         name, 
         {
           'weight_threshold' : 1,

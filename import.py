@@ -19,8 +19,6 @@ Base.metadata.create_all(get_engine())
 
 from bts2helper import *
 
-WS_NODE  = os.environ.get('UW_WS_NODE', 'ws://localhost:8090/')
-
 def get_my_last_block(db):
   q = db.query(Block)
   q = q.order_by(Block.block_num.desc())
@@ -120,7 +118,8 @@ def do_import():
           my_block = new_block
       
       if run_update_holders:
-        update_holders(db)
+        update_holders(db, ASSET_ID)
+        update_holders(db, DESCUBIERTO_ID)
         db.commit()
 
   except Exception as ex:
@@ -131,7 +130,8 @@ def do_import():
 if __name__ == "__main__":
 
   with session_scope() as db:
-    update_holders(db)
+    update_holders(db, ASSET_ID)
+    update_holders(db, DESCUBIERTO_ID)
     db.commit()
   
   while True:

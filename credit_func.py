@@ -204,7 +204,7 @@ def multisig_claim_fees(assets_to_claim):
 
 if __name__ == '__main__':
   #pass
-#   init([])
+  init([])
 #   new_options = {
 #     "max_supply": "10000000000",
 #     "market_fee_percent": 0,
@@ -235,11 +235,20 @@ if __name__ == '__main__':
   #multisig_claim_fees(["MONEDAPAR","DESCUBIERTOPAR"])
   #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
+
   accounts_to_issue = {
-    "moneda-par.tuti" : 100, 
-#     "testtest.pepita3" : 500, 
-#     "testtest.pepita4" : 750,
-#     "matu"             : 2500
+    "moneda-par.andrea"  : 1000, 
   }
+
   multisig_set_overdraft(accounts_to_issue)
+
+  #print withdraw_permission_create(
+  #  account_id('matias'), 
+  #  account_id('beto'), 
+  #  amount_of(assets['MONEDAPAR'], 100), 
+  #  86400,
+  #  30,
+  #  format_date(calc_expiration(datetime.utcnow(), 120)),
+  #  wifs['matias']
+  #)
   

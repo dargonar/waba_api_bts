@@ -31,16 +31,18 @@ API_ID = {
   'db'      : "database",
   'network' : "network_broadcast",
   'history' : "history",
+  "asset"   : "asset",
+  "block"   : "block" 
 }
 
 def call_rpc_impl(api, method, *params):
   url     = RPC_NODE #'http://localhost:8090/rpc'
   headers = {
     'content-type'  : 'application/json',
-    'Authorization' : 'Basic Ynl0ZW1hc3RlcjpzdXBlcnNlY3JldA=='
+    #'Authorization' : 'Basic Ynl0ZW1hc3RlcjpzdXBlcnNlY3JldA=='
   }
   
-  auth    = ('bytemaster', 'supersecret')
+  auth    = ('kkuser', 'supersecret')
 
   payload2 =  {
       "method": "call",
@@ -73,7 +75,7 @@ def db_get_objects(objects):
   return call_rpc('db', 'get_objects', objects)
 
 def db_get_asset_holders(asset_id):
-  return call_rpc('db', 'get_asset_holders', asset_id)
+  return call_rpc('asset', 'get_asset_holders', asset_id)
 
 def db_get_key_references(key):
   return call_rpc('db', 'get_key_references', key)
@@ -91,7 +93,7 @@ def db_get_block(block_num):
   return call_rpc('db', 'get_block', block_num)
 
 def db_get_blocks(block_num_from, block_num_to):
-  return call_rpc('db', 'get_blocks', block_num_from, block_num_to)
+  return call_rpc('block', 'get_blocks', block_num_from, block_num_to)
 
 def db_get_accounts(account_ids):
   return call_rpc('db', 'get_accounts', account_ids)

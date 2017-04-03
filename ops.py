@@ -39,6 +39,19 @@ def override_transfer_op(issuer, _from, to, amount, memo=None, fee=None):
   
   return tmp  
 
+def withdraw_permission_create_op(withdraw_from_account, authorized_account, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, fee=None):
+  tmp = [25, {
+      'withdraw_from_account'    : withdraw_from_account,
+      'authorized_account'       : authorized_account,
+      'withdrawal_limit'         : withdrawal_limit,
+      'withdrawal_period_sec'    : withdrawal_period_sec,
+      'periods_until_expiration' : periods_until_expiration,
+      'period_start_time'        : period_start_time
+  }]
+
+  if fee: tmp[1]['fee'] = fee
+  return tmp
+
 def proposal_delete_op(fee_paying_account, proposal, using_owner_authority=False, fee=None):
   tmp = [24, {
       'fee_paying_account'    : fee_paying_account,

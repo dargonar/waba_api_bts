@@ -14,8 +14,9 @@ from time import sleep
 from utils import *
 from models import *
 
-WS_NODE = os.environ.get('UW_WS_NODE', 'ws://localhost:8090/')
-
+WS_NODE = os.environ.get('WS_NODE', 'ws://localhost:8090/')
+print 'using WS_NODE =>', WS_NODE
+ 
 def send_notification(account_name, message):
 
   player_id = None
@@ -30,10 +31,10 @@ def send_notification(account_name, message):
   print "FOUND =>", account_name, "=", player_id 
   
   header = {"Content-Type": "application/json; charset=utf-8",
-            "Authorization": "Basic YmFjNjg1MzctYzhlZC00ZDgzLWJjYWItZjZjY2UzOTI1Mjhl"}
+            "Authorization": "Basic YmRjMjQ2N2UtZDZjNi00ZTM4LTgxMzQtNTZlMTVmZTU1N2I4"}
 
   payload = {
-    "app_id"             : "1c6e4f37-2ed4-4e9a-9283-cd839cfc4e74",
+    "app_id"             : "bad68d31-19a0-4201-ab14-1607f9a98a8b",
     "small_icon"         : "ic_iconoclasa.png",
     "include_player_ids" : [player_id],
     "android_sound"     : "coins_received",
