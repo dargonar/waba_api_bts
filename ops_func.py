@@ -45,7 +45,7 @@ def build_tx_and_broadcast(ops, wif):
 
 def set_fees_and_broadcast(ops, wif, pay_in):
   ops = set_fees(ops, pay_in)
-  if not wif: return ops
+  #if not wif: return ops
   return build_tx_and_broadcast(ops, wif)
 
 # OPS Func

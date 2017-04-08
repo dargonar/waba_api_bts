@@ -179,6 +179,27 @@ def multisig_reserve_asset(assets_to_reserve):
   set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
+def multisig_change_keys(account, owner, active, memo_key):
+  init([account])
+
+  active_auth = {
+    'weight_threshold' : 1,
+    'account_auths'    : [],
+    'key_auths'        : [[active,1]], 
+    'address_auths'    : []
+  }
+  
+  owner_auth = {
+    'weight_threshold' : 1,
+    'account_auths'    : [[account_id('gobierno-par'),1]],
+    'key_auths'        : [[owner,1]], 
+    'address_auths'    : []
+  }
+  
+  ops = account_update(account_id(account), owner_auth, active_auth, {'memo_key':memo_key})
+  #[wifs['marcio'], wifs['beto']]
+  print set_fees_and_broadcast(ops, None, CORE_ASSET)
+  
 def multisig_claim_fees(assets_to_claim):
   init([])
   
