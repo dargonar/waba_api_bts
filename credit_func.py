@@ -237,7 +237,8 @@ if __name__ == '__main__':
   #WARNING_multisig_bring_them_all_proposal()
 
   accounts_to_issue = {
-    "moneda-par.andrea"  : 1000, 
+    "moneda-par.edithe"    : 30000, 
+    "moneda-par.carlos444" : 30000, 
   }
 
   multisig_set_overdraft(accounts_to_issue)

@@ -281,6 +281,14 @@ class Transfer(graphene.ObjectType):
   def resolve_type_(self, args, context, info):
     f = cache.get_account(self.op['from'])['name']
 
+    # print 'comerla ...'
+    # print args
+    # print '******************'
+    # print context
+    # print '******************'
+    # print info
+    # print '******************'
+
     #HACK:
     x = info.operation.selection_set.selections[0].arguments[0].value.value
     if x == f: return 'sent'
@@ -347,7 +355,7 @@ class Account(graphene.ObjectType):
       
       print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
       ttt = rpc.history_get_account_history(self.account['id'], stop, limit, start)
-      print map(lambda x: x['id'], ttt)
+      #print map(lambda x: x['id'], ttt)
       ops = ttt
       print '[END] rpc.history_get_account_history '
 
@@ -361,8 +369,8 @@ class Account(graphene.ObjectType):
       oph = ops[i]
       op  = oph['op']
       
-      print '{0}/{1}*******************************************'.format(i, len(ops))
-      print oph['id']
+      #print '{0}/{1}*******************************************'.format(i, len(ops))
+      #print oph['id']
       
       if op[0] == 0: 
         history.append(Transfer(oph))
