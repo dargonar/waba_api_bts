@@ -196,9 +196,17 @@ def multisig_change_keys(account, owner, active, memo_key):
     'address_auths'    : []
   }
   
-  ops = account_update(account_id(account), owner_auth, active_auth, {'memo_key':memo_key})
+  ops = account_update(
+    account_id(account), 
+    owner_auth, 
+    active_auth, 
+    {'memo_key':memo_key},
+    [wifs['marcio'], wifs['beto']],
+    assets['MONEDAPAR']['id']
+  )
+
   #[wifs['marcio'], wifs['beto']]
-  print set_fees_and_broadcast(ops, None, CORE_ASSET)
+  #set_fees_and_broadcast(ops, None, CORE_ASSET)
   
 def multisig_claim_fees(assets_to_claim):
   init([])
@@ -257,12 +265,12 @@ if __name__ == '__main__':
   #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
 
-  accounts_to_issue = {
-    "moneda-par.edithe"    : 30000, 
-    "moneda-par.carlos444" : 30000, 
-  }
+  # accounts_to_issue = {
+  #   "moneda-par.edithe"    : 30000, 
+  #   "moneda-par.carlos444" : 30000, 
+  # }
 
-  multisig_set_overdraft(accounts_to_issue)
+  # multisig_set_overdraft(accounts_to_issue)
 
   #print withdraw_permission_create(
   #  account_id('matias'), 
@@ -273,4 +281,12 @@ if __name__ == '__main__':
   #  format_date(calc_expiration(datetime.utcnow(), 120)),
   #  wifs['matias']
   #)
-  
+
+  x = multisig_change_keys(
+    "moneda-par.tuti", 
+    "BTS6NJ7HPBDfLGju7rMFgt92jfuZX6iAxwbbQrzMCWRt5fGZjqKLf",
+    "BTS5sKAiePdJZF8H6ZoCm1DE6yQUibT6f3Frd8FzY8agwuJV4EnA2",
+    "BTS5CAxUZEwiBntZEaqyawpgS63qWurWYva6hPnoVJm1GzAFQdEmd"
+  )
+
+

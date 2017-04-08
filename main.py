@@ -154,15 +154,25 @@ if __name__ == '__main__':
   @app.route('/api/v2/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
-    
+    with_no_credit = request.args.get('with_no_credit')
+
     res = []
     for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
       if tmp[0].startswith(ACCOUNT_PREFIX):
         tmp[0] = tmp[0][len(ACCOUNT_PREFIX):]
 
-        print tmp[0], search
+        #print tmp[0], search
         if tmp[0].startswith(search):
-          res.append( tmp )
+          
+          add_account = True
+
+          if with_no_credit:
+            p = rpc.db_get_account_balances(tmp[1], [DESCUBIERTO_ID])
+            add_account = p[0]['amount'] == 0
+
+          if add_account:
+            res.append( tmp )
+
     return jsonify( res )
 
   @app.route('/api/v2/register', methods=['POST'])
