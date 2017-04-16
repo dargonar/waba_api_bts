@@ -20,6 +20,7 @@ Base.metadata.create_all(get_engine())
 from datatables import ColumnDT, DataTables
 
 from ops import *
+from ops_func import *
 from bts2helper import *
 import simplejson as json
 from graphql.execution.executors.gevent import GeventExecutor
@@ -28,6 +29,7 @@ from graphql.execution.executors.gevent import GeventExecutor
 #ACCOUNT_PREFIX = '' 
 from memcache import Client
 import rpc
+import cache
 
 ERR_UNKNWON_ERROR    = 'unknown_error'
 
@@ -93,23 +95,77 @@ if __name__ == '__main__':
   # ############################################    
   # Backend api 
   # ############################################
-  @app.route('/backend/dt/holding', methods=['GET'])
-  def holding():
+  # @app.route('/backend/dt/holding', methods=['GET'])
+  # def holding():
     
-    columns = []
-    columns.append(ColumnDT('id'))
-    columns.append(ColumnDT('name'))
-    #columns.append(ColumnDT('address.description')) # where address is an SQLAlchemy Relation
-    #columns.append(ColumnDT('created_at', filter=str))
+  #   columns = []
+  #   columns.append(ColumnDT('id'))
+  #   columns.append(ColumnDT('name'))
+  #   #columns.append(ColumnDT('address.description')) # where address is an SQLAlchemy Relation
+  #   #columns.append(ColumnDT('created_at', filter=str))
 
-    # defining the initial query depending on your purpose
-    query = DBSession.query(AccountBalance) #.join(Address).filter(Address.id > 14)
+  #   # defining the initial query depending on your purpose
+  #   query = DBSession.query(AccountBalance) #.join(Address).filter(Address.id > 14)
 
-    # instantiating a DataTable for the query and table needed
-    rowTable = DataTables(request.args, AccountBalance, query, columns)
+  #   # instantiating a DataTable for the query and table needed
+  #   rowTable = DataTables(request.args, AccountBalance, query, columns)
 
-    # returns what is needed by DataTable
-    return jsonify( rowTable.output_result() )
+  #   # returns what is needed by DataTable
+  #   return jsonify( rowTable.output_result() )
+
+  @app.route('/api/v2/endorse/create', methods=['POST'])
+  def endorse_create():
+    
+    valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
+    
+    _from        = request.json.get('from')  
+    _to          = request.json.get('to')
+    endorse_type = request.json.get('endorse_type')
+
+    from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
+    to_id   = cache.get_account_id(ACCOUNT_PREFIX + _to)
+
+    if endorse_type not in valid_assets:
+      return jsonify({'error':'invalid_endorsement'})
+
+    if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+      return jsonify({'error':'already_endorsed'})
+
+    p = rpc.db_get_account_balances(from_id, [endorse_type])
+    if p[0]['amount'] == 0:
+      return jsonify({'error':'no_endorsement_available'})
+
+    p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
+    if p[0]['amount'] > 0:
+      return jsonify({'error':'already_have_credit'})
+
+    asset = rpc.db_get_assets([endorse_type])[0]
+    
+    memo = {
+      'message' : '~ieu'.encode('hex')
+    }
+
+    tx = build_tx_and_broadcast(
+      transfer(
+        from_id,
+        to_id,
+        asset,
+        1,
+        memo,
+        None,
+        MONEDAPAR_ID
+      ) + account_whitelist(
+        PROPUESTA_PAR_ID,
+        to_id,
+        2 #insert into black list
+      )
+    , None)
+
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+    
+    tx['signatures'] = [signature]
+    return jsonify( {'tx':tx} )
 
   @app.route('/api/v2/push_id', methods=['POST'])
   def push_id():
@@ -154,7 +210,7 @@ if __name__ == '__main__':
   @app.route('/api/v2/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
-    with_no_credit = request.args.get('with_no_credit')
+    with_no_credit = int(request.args.get('with_no_credit',0))
 
     res = []
     for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
@@ -166,9 +222,13 @@ if __name__ == '__main__':
           
           add_account = True
 
-          if with_no_credit:
+          if with_no_credit != 0:
             p = rpc.db_get_account_balances(tmp[1], [DESCUBIERTO_ID])
-            add_account = p[0]['amount'] == 0
+            no_credit = p[0]['amount'] == 0
+
+            no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
+
+            add_account = no_credit and no_black
 
           if add_account:
             res.append( tmp )

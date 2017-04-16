@@ -23,7 +23,7 @@ def init(other_accounts):
   accounts = { a[0]:a[1] for a in rpc.db_get_full_accounts(list(set(list(wifs)+other_accounts)), False) }
   
   global assets
-  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.1236','1.3.1237']) }
+  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.1236','1.3.1237','1.3.1319','1.3.1322','1.3.1320','1.3.1321']) }
 
 def ops_for_remove(account_name, amount):
   res = override_transfer( 
@@ -233,7 +233,36 @@ def multisig_claim_fees(assets_to_claim):
 
 if __name__ == '__main__':
   #pass
-  init([])
+
+  # init([])
+  # new_options = {
+  #   "max_supply": "100000000",
+  #   "market_fee_percent": 0,
+  #   "max_market_fee": 0,
+  #   "issuer_permissions": 79,
+  #   "flags": 78,
+  #   "core_exchange_rate": {
+  #     "base": {
+  #       "amount": 100000,
+  #       "asset_id": "1.3.0"
+  #     },
+  #     "quote": {
+  #       "amount": 1,
+  #       "asset_id": "1.3.1321"
+  #     }
+  #   },
+  #   "blacklist_authorities" : [ account_id('propuesta-par') ],
+  #   "description" : json.dumps({"main":"Aval de credito PAR x 100000","short_name":"","market":""})
+  # }
+  
+  # asset_update(
+  #   account_id('propuesta-par'), 
+  #   assets['MONEDAPAR.AC']['id'],
+  #   new_options, 
+  #   wif=[wifs['marcio'], wifs['beto']]
+  # )
+
+
 #   new_options = {
 #     "max_supply": "10000000000",
 #     "market_fee_percent": 0,
@@ -259,15 +288,15 @@ if __name__ == '__main__':
 #     new_options, 
 #     wif=[wifs['marcio'], wifs['beto']]
 #   )
-  
+ 
   
   #multisig_claim_fees(["MONEDAPAR","DESCUBIERTOPAR"])
   #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
 
   # accounts_to_issue = {
-  #   "moneda-par.edithe"    : 30000, 
-  #   "moneda-par.carlos444" : 30000, 
+  #   "moneda-par.tuti"    : 1000, 
+  #   # "moneda-par.carlos444" : 30000, 
   # }
 
   # multisig_set_overdraft(accounts_to_issue)
@@ -282,11 +311,9 @@ if __name__ == '__main__':
   #  wifs['matias']
   #)
 
-  x = multisig_change_keys(
-    "moneda-par.tuti", 
-    "BTS6NJ7HPBDfLGju7rMFgt92jfuZX6iAxwbbQrzMCWRt5fGZjqKLf",
-    "BTS5sKAiePdJZF8H6ZoCm1DE6yQUibT6f3Frd8FzY8agwuJV4EnA2",
-    "BTS5CAxUZEwiBntZEaqyawpgS63qWurWYva6hPnoVJm1GzAFQdEmd"
-  )
-
-
+  # x = multisig_change_keys(
+  #   "moneda-par.tuti", 
+  #   "BTS6NJ7HPBDfLGju7rMFgt92jfuZX6iAxwbbQrzMCWRt5fGZjqKLf",
+  #   "BTS5sKAiePdJZF8H6ZoCm1DE6yQUibT6f3Frd8FzY8agwuJV4EnA2",
+  #   "BTS5CAxUZEwiBntZEaqyawpgS63qWurWYva6hPnoVJm1GzAFQdEmd"
+  # )

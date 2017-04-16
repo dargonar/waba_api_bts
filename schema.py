@@ -307,12 +307,18 @@ class Account(graphene.ObjectType):
   )
   
   balance = graphene.List(Amount)
+  blacklisted_by = graphene.Boolean(
+    account = graphene.String()
+  )
 
   def __init__(self, account):
     self.account = account
 
   def resolve_id(self, args, context, info):
     return self.account['id']
+  
+  def resolve_blacklisted_by(self, args, context, info):
+    return self.account['id'] in rpc.db_get_account_by_name(args.get('account'))['blacklisted_accounts']
 
   def resolve_name(self, args, context, info):
     name = self.account['name']
