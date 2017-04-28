@@ -18,6 +18,7 @@ BOOST_PYTHON_MODULE(bts2helper)
   register_exception_translator<fc::exception>(&translate);
   def("bts2helper_is_valid_name"     , bts2helper_is_valid_name);
   def("bts2helper_is_cheap_name"     , bts2helper_is_cheap_name);
+  def("bts2helper_tx_id"             , bts2helper_tx_id);
   def("bts2helper_tx_digest"         , bts2helper_tx_digest);
   def("bts2helper_sign_compact"      , bts2helper_sign_compact);
   def("bts2helper_recover_pubkey"    , bts2helper_recover_pubkey);

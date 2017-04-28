@@ -3,6 +3,7 @@
 std::string bts2helper_sign_compact(const std::string& digest, const std::string& wif);
 std::string bts2helper_recover_pubkey(const std::string& signature, const std::string& digest, bool check_canonical );
 std::string bts2helper_tx_digest(const std::string& tx_json, const std::string& chain_id);
+std::string bts2helper_tx_id(const std::string& tx_json);
 uint32_t bts2helper_ref_block_num(const std::string& block_id);
 uint32_t bts2helper_ref_block_prefix(const std::string& block_id);
 std::string bts2helper_block_id(const std::string& signed_block_header_json);

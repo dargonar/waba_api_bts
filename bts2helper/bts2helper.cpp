@@ -91,6 +91,15 @@ std::string bts2helper_recover_pubkey(const std::string& signature, const std::s
   return fc::to_hex(fc::raw::pack(_pub_key.serialize()));
 }
 
+std::string bts2helper_tx_id(const std::string& tx_json) {
+
+  auto tx     = fc::json::from_string(tx_json).as<transaction>();
+  auto txid   = tx.id();
+  auto data   = fc::raw::pack(txid);
+
+  return fc::to_hex(data);
+}
+
 std::string bts2helper_tx_digest(const std::string& tx_json, const std::string& chain_id) {
 
   auto tx     = fc::json::from_string(tx_json).as<transaction>();
