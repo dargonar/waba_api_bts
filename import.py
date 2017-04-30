@@ -32,6 +32,11 @@ def undo_block(db, block):
   # Get previous
   return get_my_last_block(db)
 
+def get_message(op):
+  if 'memo' not in op: return None
+  if 'message' not in op['memo']: return None
+  return op['memo']['message']
+
 def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
 
   print op
@@ -40,6 +45,7 @@ def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
   from_id = op[1]['from']
   amount  = op[1]['amount']
   fee     = op[1]['fee']
+  memo    = get_message(op[1])
   
   amount_asset = cache.get_asset(amount['asset_id'])
   fee_asset    = cache.get_asset(fee['asset_id'])
@@ -57,11 +63,12 @@ def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
     block_num    = block_num,
     trx_in_block = trx_in_block,
     op_in_trx    = op_in_trx,
-    timestamp    = parse(ts)
+    timestamp    = parse(ts),
+    memo         = memo[:32] if memo else None,
+    processed    = 0
   )
   
   return transfer
-  
 
 def do_import():
   try:
@@ -75,13 +82,12 @@ def do_import():
       
       # Check participation rate
       pr = rpc.calc_participation_rate(int(dgp['recent_slots_filled']))
-      if int(pr) < 75:
+      if int(pr) < 80:
         print 'Participation rate too low'
         return
       
       last_block_num = dgp['head_block_number']
       
-      run_update_holders = False
       while last_block_num > my_block.block_num:
         
         from_block = int(my_block.block_num+1)
@@ -107,21 +113,21 @@ def do_import():
           
           for blk_inx, next_block in enumerate(blocks):
             for trx_in_block, tx in enumerate(next_block['transactions']):
+              
+              to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+              for le in db.query(LastError).filter(LastError.txid == to_sign).all():
+                le.block_num = new_block.block_num
+                le.trx_in_block = trx_in_block
+
               for op_in_trx, op in enumerate(tx['operations']):
-                if not ( op[0] == 0 and op[1]['amount']['asset_id'] == ASSET_ID ):
+                if not ( op[0] == 0 and op[1]['amount']['asset_id'] in ALL_TRACKED_ASSETS ):
                   continue
                 t = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
                 db.add(t)
-                run_update_holders = True
          
           db.commit()
           my_block = new_block
       
-      if run_update_holders:
-        update_holders(db, ASSET_ID)
-        update_holders(db, DESCUBIERTO_ID)
-        db.commit()
-
   except Exception as ex:
     print ex
     logging.error(traceback.format_exc())
@@ -129,14 +135,18 @@ def do_import():
   
 if __name__ == "__main__":
 
-  with session_scope() as db:
-    update_holders(db, ASSET_ID)
-    update_holders(db, DESCUBIERTO_ID)
-    db.commit()
-  
   while True:
     try:
       do_import()
       sleep(3)
     except Exception as ex:
       logging.error(traceback.format_exc())
+
+
+  # with session_scope() as db:
+  #   for t in db.query(Transfer).all():
+  #     tx = rpc.db_get_transaction(t.block_num, t.trx_in_block)
+  #     if 'memo' in tx['operations'][t.op_in_trx][1]:
+  #       t.memo = tx['operations'][t.op_in_trx][1]['memo']['message'][:32]
+
+  #   db.commit()

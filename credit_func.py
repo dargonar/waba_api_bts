@@ -4,12 +4,14 @@ import simplejson as json
 from ops_func import *
 
 wifs = {
- 'matias'         : '5Jg4pQNnJdMboeRaFa1dQznDt2fc4GunjSLPtJZ828grKv1SxTm',
- 'beto'           : '5JiF8n5nxoJX6qQ45VVtURnTBZvbPBMTb756WptAkNZGMfpgw3e',
- 'marcio'         : '5K41mU4XhmbJ2ZX3fSqhoFi1iVKYcwvM3e84tKuLbKGPm5SxWPd', 
- 'propuesta-par'  : '5K5p1J9yXWpY9qvpD2CTv5VLqmda4QxqayQT2w3Q2vRW9xfVhwd',
- 'petoelpatoputo' : '5HuSJENqeLwKEdJDFRahhKvdniqt4V2RZSnMSd9MrU82EhSGuhW',
- 'gobierno-par'   : '',
+ 'matias'            : '5Jg4pQNnJdMboeRaFa1dQznDt2fc4GunjSLPtJZ828grKv1SxTm',
+ 'beto'              : '5JiF8n5nxoJX6qQ45VVtURnTBZvbPBMTb756WptAkNZGMfpgw3e',
+ 'marcio'            : '5K41mU4XhmbJ2ZX3fSqhoFi1iVKYcwvM3e84tKuLbKGPm5SxWPd', 
+ 'propuesta-par'     : '5K5p1J9yXWpY9qvpD2CTv5VLqmda4QxqayQT2w3Q2vRW9xfVhwd',
+ 'petoelpatoputo'    : '5HuSJENqeLwKEdJDFRahhKvdniqt4V2RZSnMSd9MrU82EhSGuhW',
+ 'gobierno-par'      : '',
+ 'moneda-par.prueba' : '5Hqk35nSEHYFRXsrZgpZ5yuHv6Nged7hmWCrrbYazeJwDKSYWFZ',
+ 'moneda-par.matias' : '5KaMXhrGoHcNJuoZ25ZieM4BLhBR7xwXu64UncX3FaUTJ2Kx9fG'
 }
 
 accounts = {}
@@ -17,6 +19,9 @@ assets   = {}
 
 def account_id(name):
   return accounts[name]['account']['id']
+
+def asset_id(name):
+  return assets[name.upper()]['id']
 
 def init(other_accounts):
   global accounts
@@ -232,7 +237,34 @@ def multisig_claim_fees(assets_to_claim):
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 if __name__ == '__main__':
-  #pass
+  init([])
+  endorse_type = '1.3.1319'
+  
+  asset = rpc.db_get_assets([endorse_type])[0]
+  memo  = {
+    'message' : '~ie:prueba'.encode('hex')
+  }
+
+  transfer(
+    account_id('moneda-par.matias'),
+    account_id('propuesta-par'),
+    asset,
+    1,
+    memo,
+    wifs['moneda-par.matias'],
+    asset_id('monedapar')
+  )
+  
+  # ops = []
+  # ops.extend( 
+  #   account_whitelist(
+  #     account_id('propuesta-par'),
+  #     account_id('moneda-par.prueba'),
+  #     0 #delist
+  #   )
+  # )
+  # print json.dumps(ops, indent=2)
+  # set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
 
   # init([])
   # new_options = {
@@ -240,7 +272,7 @@ if __name__ == '__main__':
   #   "market_fee_percent": 0,
   #   "max_market_fee": 0,
   #   "issuer_permissions": 79,
-  #   "flags": 78,
+  #   "flags": 70,
   #   "core_exchange_rate": {
   #     "base": {
   #       "amount": 100000,
@@ -248,7 +280,7 @@ if __name__ == '__main__':
   #     },
   #     "quote": {
   #       "amount": 1,
-  #       "asset_id": "1.3.1321"
+  #       "asset_id": assets['MONEDAPAR.AC']['id']
   #     }
   #   },
   #   "blacklist_authorities" : [ account_id('propuesta-par') ],

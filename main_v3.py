@@ -11,7 +11,7 @@ from flask import Flask, jsonify, make_response, request, g
 from flask_graphql import GraphQLView
 from flask_cors import CORS, cross_origin
 
-from schema import theSchema
+from schema_v3 import theSchema
 from utils import *
 
 from models import *
@@ -36,7 +36,7 @@ ERR_UNKNWON_ERROR    = 'unknown_error'
 def create_app(**kwargs):
   app = Flask(__name__)
   app.debug = True
-  app.add_url_rule('/graphql/v2', view_func=GraphQLView.as_view('graphql', schema=theSchema, **kwargs))
+  app.add_url_rule('/graphql/v3', view_func=GraphQLView.as_view('graphql', schema=theSchema, **kwargs))
 
   @app.before_request
   def log_request():
@@ -64,7 +64,7 @@ if __name__ == '__main__':
   def unhandled_exception(e):
     return make_response(jsonify({'error': str(e)}), 500)
   
-#   @app.route('/api/v2/transfer', methods=['POST'])
+#   @app.route('/api/v3/transfer', methods=['POST'])
 #   def transfer():
 #     try:
 #       req = request.json
@@ -113,61 +113,61 @@ if __name__ == '__main__':
   #   # returns what is needed by DataTable
   #   return jsonify( rowTable.output_result() )
 
-  @app.route('/api/v2/endorse/create', methods=['POST'])
-  def endorse_create():
+  # @app.route('/api/v3/endorse/create', methods=['POST'])
+  # def endorse_create():
     
-    valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
+  #   valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
     
-    _from        = request.json.get('from')  
-    _to          = request.json.get('to')
-    endorse_type = request.json.get('endorse_type')
+  #   _from        = request.json.get('from')  
+  #   _to          = request.json.get('to')
+  #   endorse_type = request.json.get('endorse_type')
 
-    from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
-    to_id   = cache.get_account_id(ACCOUNT_PREFIX + _to)
+  #   from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
+  #   to_id   = cache.get_account_id(ACCOUNT_PREFIX + _to)
 
-    if endorse_type not in valid_assets:
-      return jsonify({'error':'invalid_endorsement'})
+  #   if endorse_type not in valid_assets:
+  #     return jsonify({'error':'invalid_endorsement'})
 
-    if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
-      return jsonify({'error':'already_endorsed'})
+  #   if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+  #     return jsonify({'error':'already_endorsed'})
 
-    p = rpc.db_get_account_balances(from_id, [endorse_type])
-    if p[0]['amount'] == 0:
-      return jsonify({'error':'no_endorsement_available'})
+  #   p = rpc.db_get_account_balances(from_id, [endorse_type])
+  #   if p[0]['amount'] == 0:
+  #     return jsonify({'error':'no_endorsement_available'})
 
-    p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
-    if p[0]['amount'] > 0:
-      return jsonify({'error':'already_have_credit'})
+  #   p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
+  #   if p[0]['amount'] > 0:
+  #     return jsonify({'error':'already_have_credit'})
 
-    asset = rpc.db_get_assets([endorse_type])[0]
+  #   asset = rpc.db_get_assets([endorse_type])[0]
     
-    memo = {
-      'message' : '~ieu'.encode('hex')
-    }
+  #   memo = {
+  #     'message' : '~ieu'.encode('hex')
+  #   }
 
-    tx = build_tx_and_broadcast(
-      transfer(
-        from_id,
-        to_id,
-        asset,
-        1,
-        memo,
-        None,
-        MONEDAPAR_ID
-      ) + account_whitelist(
-        PROPUESTA_PAR_ID,
-        to_id,
-        2 #insert into black list
-      )
-    , None)
+  #   tx = build_tx_and_broadcast(
+  #     transfer(
+  #       from_id,
+  #       to_id,
+  #       asset,
+  #       1,
+  #       memo,
+  #       None,
+  #       MONEDAPAR_ID
+  #     ) + account_whitelist(
+  #       PROPUESTA_PAR_ID,
+  #       to_id,
+  #       2 #insert into black list
+  #     )
+  #   , None)
 
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+  #   to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+  #   signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
-    tx['signatures'] = [signature]
-    return jsonify( {'tx':tx} )
+  #   tx['signatures'] = [signature]
+  #   return jsonify( {'tx':tx} )
 
-  @app.route('/api/v2/push_id', methods=['POST'])
+  @app.route('/api/v3/push_id', methods=['POST'])
   def push_id():
     with session_scope() as db:
       pi, is_new = get_or_create(db, PushInfo,
@@ -180,36 +180,38 @@ if __name__ == '__main__':
     
     return jsonify( 'ok' )
 
-  @app.route('/api/v2/push_tx', methods=['POST'])
+  @app.route('/api/v3/push_tx', methods=['POST'])
   def push_tx():
     tx  = request.json.get('tx')
     print tx
     rpc.network_broadcast_transaction(tx)
     return jsonify( {'ok':'ok'} )
 
-#   @app.route('/api/v2/get_global_properties', methods=['GET'])
+#   @app.route('/api/v3/get_global_properties', methods=['GET'])
 #   def db_get_global_properties():
 #     return jsonify( rpc.db_get_global_properties() )
 
-#   @app.route('/api/v2/welcome', methods=['GET'])
+#   @app.route('/api/v3/welcome', methods=['GET'])
 #   def welcome():
 #     props = rpc.db_get_global_properties()
 #     asset = rpc.db_get_assets([ASSET_ID])[0]
 #     return jsonify({'props':props, 'asset':asset})
 
-  @app.route('/api/v2/find_account', methods=['POST'])
+  @app.route('/api/v3/find_account', methods=['POST'])
   def find_account():
     key  = request.json.get('key')
     account_ids = set(rpc.db_get_key_references([key])[0])
     return jsonify([real_name(a['name']) for a in rpc.db_get_accounts(list(account_ids))])
 
-  @app.route('/api/v2/account/<account>', methods=['GET'])
+  @app.route('/api/v3/account/<account>', methods=['GET'])
   def get_account(account):
     return jsonify( rpc.db_get_account_by_name(ACCOUNT_PREFIX+account) )
   
-  @app.route('/api/v2/searchAccount', methods=['GET'])
+  @app.route('/api/v3/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
+    with_no_credit = int(request.args.get('with_no_credit',0))
+
     res = []
     for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
       if tmp[0].startswith(ACCOUNT_PREFIX):
@@ -217,11 +219,23 @@ if __name__ == '__main__':
 
         #print tmp[0], search
         if tmp[0].startswith(search):
-          res.append( tmp )
+          
+          add_account = True
+
+          if with_no_credit != 0:
+            p = rpc.db_get_account_balances(tmp[1], [DESCUBIERTO_ID])
+            no_credit = p[0]['amount'] == 0
+
+            no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
+
+            add_account = no_credit and no_black
+
+          if add_account:
+            res.append( tmp )
 
     return jsonify( res )
 
-  @app.route('/api/v2/register', methods=['POST'])
+  @app.route('/api/v3/register', methods=['POST'])
   def register():
     try:
       req = request.json

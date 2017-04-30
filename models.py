@@ -125,8 +125,25 @@ class Transfer(Base, TimestampMixin):
   fee          = Column(Integer)
   fee_asset    = Column(String(32))
 
-  timestamp    = Column(DateTime) 
+  timestamp    = Column(DateTime)
   
   block_num    = Column(Integer)
   trx_in_block = Column(Integer)
   op_in_trx    = Column(Integer)
+  
+  memo         = Column(String(32))
+
+  processed    = Column(Integer, default=0, index=True)
+
+class LastError(Base, TimestampMixin):
+  __tablename__ = 'last_error'
+
+  id           = Column(Integer, primary_key=True)
+  transfer_id  = Column(Integer, ForeignKey("transfer.id", ondelete="CASCADE"), nullable=False, unique=True) 
+  description  = Column(Text)
+  
+  txid         = Column(String(64), index=True)
+  
+  block_num    = Column(Integer)
+  trx_in_block = Column(Integer)
+
