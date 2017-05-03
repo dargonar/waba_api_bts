@@ -25,7 +25,7 @@ def user_authorize_user(t):
 
   to            = t.memo[8:].decode('hex')
   to_id         = cache.get_account_id(unicode(ACCOUNT_PREFIX + to))
-  from_name     = t.from_name[len(ACCOUNT_PREFIX)+1]
+  from_name     = real_name(t.from_name)
   endorse_type  = t.amount_asset
 
   if endorse_type not in valid_assets:
@@ -40,7 +40,7 @@ def user_authorize_user(t):
 
   asset = rpc.db_get_assets([endorse_type])[0]
   memo  = {
-    'message' : '~eb:{0}'.format(t.from_name).encode('hex')
+    'message' : '~eb:{0}'.format(from_name).encode('hex')
   }
 
   tx = build_tx_and_broadcast(
@@ -66,10 +66,66 @@ def user_authorize_user(t):
   return to_sign
 
 def user_applies_authorization(t):
-  raise Exception('No me piache')
+
+  endorse_type  = t.amount_asset
+
+  if endorse_type not in valid_assets:
+    raise Exception('invalid_endorsement')
+
+  p = rpc.db_get_account_balances(t.from_id, [DESCUBIERTO_ID])
+  if p[0]['amount'] > 0:
+    raise Exception('already_have_credit')
+
+  amount = 0
+  if endorse_type == AVAL_1000:
+    amount = 1000
+  elif endorse_type == AVAL_10000:
+    amount = 10000
+  elif endorse_type == AVAL_30000:
+    amount = 30000
+  else:
+    raise Exception('invalid_endorse')  
+
+  accounts_to_issue = {
+    t.from_name  : amount,
+  }
+
+  # HACK : poner las privadas en orden y los owner de los assets
+  from credit_func import multisig_set_overdraft
+  multisig_set_overdraft(accounts_to_issue)
 
 def user_transfer_authorizations(t):
-  raise Exception('No me ricordo')
+  
+  to            = t.memo[8:].decode('hex')
+  to_id         = cache.get_account_id(unicode(ACCOUNT_PREFIX + to))
+  from_name     = real_name(t.from_name)
+  endorse_type  = t.amount_asset
+
+  if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+    raise Exception('unable_to_receive')
+
+  asset = rpc.db_get_assets([endorse_type])[0]
+  memo = {
+    'message' : '~et:{0}'.format(from_name).encode('hex')
+  }
+
+  tx = build_tx_and_broadcast(
+      transfer(
+        PROPUESTA_PAR_ID,
+        to_id,
+        asset,
+        t.amount,
+        memo
+      )
+    , None)
+
+  to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+  signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+  tx['signatures'] = [signature]
+
+  print tx
+  p = rpc.network_broadcast_transaction(tx)
+  return to_sign
 
 def do_process():
   try:

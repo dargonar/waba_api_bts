@@ -112,7 +112,7 @@ def multisig_set_overdraft(accounts_to_issue):
   assert( len(ops) > 0 ), "No hay operaciones parar realizar"
   #print json.dumps(ops, indent=2)
   #return
-  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 def multisig_delete_proposal(proposal_id):
@@ -238,23 +238,38 @@ def multisig_claim_fees(assets_to_claim):
 
 if __name__ == '__main__':
   init([])
-  endorse_type = '1.3.1319'
+
+  asset1, asset2 = rpc.db_get_assets(['1.3.1320', '1.3.1322'])
   
-  asset = rpc.db_get_assets([endorse_type])[0]
+  print "***********************************************************"
+  print "***********************************************************"
+  print "***********************************************************"
+
+  print asset1
+  
   memo  = {
-    'message' : '~ie:prueba'.encode('hex')
+    'message' : '~et:prueba'.encode('hex')
   }
 
-  transfer(
-    account_id('moneda-par.matias'),
-    account_id('propuesta-par'),
-    asset,
-    1,
-    memo,
+  set_fees_and_broadcast(
+    transfer(
+      account_id('moneda-par.matias'),
+      account_id('propuesta-par'),
+      asset1,
+      3,
+      memo,
+    ) + transfer(
+      account_id('moneda-par.matias'),
+      account_id('propuesta-par'),
+      asset2,
+      2,
+      memo,
+    ),
     wifs['moneda-par.matias'],
     asset_id('monedapar')
   )
-  
+
+
   # ops = []
   # ops.extend( 
   #   account_whitelist(

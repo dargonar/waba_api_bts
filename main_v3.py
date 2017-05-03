@@ -113,59 +113,72 @@ if __name__ == '__main__':
   #   # returns what is needed by DataTable
   #   return jsonify( rowTable.output_result() )
 
-  # @app.route('/api/v3/endorse/create', methods=['POST'])
-  # def endorse_create():
+  @app.route('/api/v3/endorse/apply', methods=['POST'])
+  def endorse_create():
     
-  #   valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
+    valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
     
-  #   _from        = request.json.get('from')  
-  #   _to          = request.json.get('to')
-  #   endorse_type = request.json.get('endorse_type')
+    _from        = request.json.get('from')  
+    endorse_type = request.json.get('endorse_type')
 
-  #   from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
-  #   to_id   = cache.get_account_id(ACCOUNT_PREFIX + _to)
+    from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
 
-  #   if endorse_type not in valid_assets:
-  #     return jsonify({'error':'invalid_endorsement'})
+    if endorse_type not in valid_assets:
+      return jsonify({'error':'invalid_endorsement'})
 
-  #   if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
-  #     return jsonify({'error':'already_endorsed'})
+    p = rpc.db_get_account_balances(from_id, [endorse_type])
+    if p[0]['amount'] == 0:
+      return jsonify({'error':'no_endorsement_available'})
 
-  #   p = rpc.db_get_account_balances(from_id, [endorse_type])
-  #   if p[0]['amount'] == 0:
-  #     return jsonify({'error':'no_endorsement_available'})
+    if from_id not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+      return jsonify({'error':'no_endore_state'})
 
-  #   p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
-  #   if p[0]['amount'] > 0:
-  #     return jsonify({'error':'already_have_credit'})
+    p = rpc.db_get_account_balances(from_id, [DESCUBIERTO_ID])
+    if p[0]['amount'] > 0:
+      return jsonify({'error':'already_have_credit'})
 
-  #   asset = rpc.db_get_assets([endorse_type])[0]
+    asset, asset_core = rpc.db_get_assets([endorse_type, CORE_ASSET])
     
-  #   memo = {
-  #     'message' : '~ieu'.encode('hex')
-  #   }
+    memo = {
+      'message' : '~ae'.encode('hex')
+    }
 
-  #   tx = build_tx_and_broadcast(
-  #     transfer(
-  #       from_id,
-  #       to_id,
-  #       asset,
-  #       1,
-  #       memo,
-  #       None,
-  #       MONEDAPAR_ID
-  #     ) + account_whitelist(
-  #       PROPUESTA_PAR_ID,
-  #       to_id,
-  #       2 #insert into black list
-  #     )
-  #   , None)
+    endorse_transfer_op = transfer(
+      from_id,
+      PROPUESTA_PAR_ID,
+      asset,
+      1,
+      memo,
+      None,
+      CORE_ASSET
+    )[0]
 
-  #   to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-  #   signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+    print "************************************************"
+    print json.dumps(endorse_transfer_op, indent=2)
+    print "*********************"
+
+    # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
+    print "toma => ", endorse_transfer_op[1]['fee']['amount']
+    print "************************************************"
+
+    tx = build_tx_and_broadcast(
+      account_whitelist(
+        PROPUESTA_PAR_ID,
+        from_id,
+        0 #remove from black list
+      ) + transfer(
+        PROPUESTA_PAR_ID,
+        from_id,
+        asset_core,
+        amount_value(endorse_transfer_op[1]['fee']['amount'], asset_core)
+      ) + [endorse_transfer_op]
+    , None)
+
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
-  #   tx['signatures'] = [signature]
-  #   return jsonify( {'tx':tx} )
+    tx['signatures'] = [signature]
+    return jsonify( {'tx':tx} )
 
   @app.route('/api/v3/push_id', methods=['POST'])
   def push_id():
@@ -183,7 +196,9 @@ if __name__ == '__main__':
   @app.route('/api/v3/push_tx', methods=['POST'])
   def push_tx():
     tx  = request.json.get('tx')
-    print tx
+    if not tx:
+      tx = request.json
+      
     rpc.network_broadcast_transaction(tx)
     return jsonify( {'ok':'ok'} )
 

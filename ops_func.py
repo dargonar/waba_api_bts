@@ -41,7 +41,7 @@ def build_tx_and_broadcast(ops, wif, signatures=[]):
   print 'Broadcasting...'
   print json.dumps(tx, indent=2)
   rpc.network_broadcast_transaction(tx)
-  return []
+  return to_sign
 
 def set_fees_and_broadcast(ops, wif, pay_in):
   ops = set_fees(ops, pay_in)
