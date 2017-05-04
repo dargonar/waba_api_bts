@@ -68,6 +68,7 @@ class Block(graphene.ObjectType):
   witness_signature       = graphene.String()
   block_id                = graphene.String()
   signing_key             = graphene.String()
+  number                  = graphene.Int()
 
 class Operation(graphene.Interface):
   id        = graphene.String()
@@ -85,6 +86,7 @@ class Operation(graphene.Interface):
       witness                 = block['witness'],
       transaction_merkle_root = block['transaction_merkle_root'],
       extensions              = block['extensions'],
+      number                  = self.oph['block_num']
       #witness_signature       = block['witness_signature'],
       #block_id                = block['block_id'],
       #signing_key             = block['signing_key'],
@@ -107,6 +109,48 @@ class NoDetailOp(graphene.ObjectType):
 
   class Meta:
     interfaces = (Operation, )
+
+class CreditRequest(graphene.ObjectType):
+
+  amount = graphene.Field(lambda:Amount)
+  type   = graphene.String()
+  
+  def __init__(self, ops):
+    self.ops   = ops
+    print '*************************** largo %d' % len(ops)
+    print ops
+
+    main_op = ops[-1].oph['op']
+    
+    # This is the main OP (ops[1])
+    #
+    # [ Whitelist, 
+    #   Transfer,  
+    #   Transfer ] <==== this
+    
+    # Determine asset
+    self.asset = main_op[-1]['amount']
+    
+    # Determine type
+    # self.otype = 'down' if main_op[0] == 38 else 'up'
+    
+    # Determine id (important for history)
+    self.oph = ops[0].oph
+    self.op  = ops[0].oph['op'][1]
+    
+  class Meta:
+    interfaces = (Operation, )
+
+  def resolve_amount(self, args, context, info):
+    asset = cache.get_asset(self.asset['asset_id'])
+    return Amount(
+      quantity = amount_value( str(self.asset['amount']), asset),
+      asset    = Asset(asset)
+    )
+  
+  def resolve_ops(self, args, context, info):
+    return self.ops
+
 
 class OverdraftChange(graphene.ObjectType):
 
@@ -131,8 +175,6 @@ class OverdraftChange(graphene.ObjectType):
     #   OverrideTransfer, 
     #   AssetReserve, 
     #   Whitelist ]
-    
-    
     
     # Determine asset
     self.asset = main_op[1]['asset_to_issue'] if 'asset_to_issue' in main_op[1] else main_op[1]['amount']
@@ -360,32 +402,64 @@ class Account(graphene.ObjectType):
       start   = args.get('start', '1.11.0')
       
       print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
-      ttt = rpc.history_get_account_history(self.account['id'], stop, limit, start)
+      ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
+
+      #print json.dumps(ops[:10], indent=2)
       #print map(lambda x: x['id'], ttt)
-      ops = ttt
-      print '[END] rpc.history_get_account_history '
+      print '[END] rpc.history_get_account_history x'
+
+    ops.sort(key=lambda op: ( -op['block_num'], ['op_in_trx']) ) 
+    ops = ops[::-1]
 
     history = []
 
     in_overdraft_change = False
+    in_credit_request   = False
     sub_ops             = []
+
+    last_block = 0
+    last_tx    = -1
 
     i = 0
     while i < len(ops):
       oph = ops[i]
       op  = oph['op']
       
-      #print '{0}/{1}*******************************************'.format(i, len(ops))
-      #print oph['id']
-      
+      print '{0}/{1}*******************************************'.format(i, len(ops))
+      print oph['id']
+
+      #print "=====> TIPO : ",  oph['block_num'], oph['trx_in_block'], oph['op_in_trx'], "---", op[0], in_credit_request, in_overdraft_change
+
+      if oph['block_num'] != last_block: #or oph['trx_in_block'] != last_tx:
+        in_overdraft_change = False
+        in_credit_request = False
+
+        history.extend(sub_ops)
+        sub_ops = [] 
+
       if op[0] == 0: 
-        history.append(Transfer(oph))
+
+        if in_credit_request:
+          sub_ops.append(Transfer(oph))
+          #print 'TIENE AMOUNT => ', ('amount' in op[1])
+          if op[1]['amount']['asset_id'] in ALL_AVAL_TYPES:
+            in_credit_request = False
+            history.append(CreditRequest(list(sub_ops)))
+            sub_ops = []
+        else:
+          if op[1]['amount']['asset_id'] not in ALL_VALID_ASSETS:
+            history.append(NoDetailOp(oph))
+          else:
+            history.append(Transfer(oph))
       
       elif op[0] == 7: # Whitelist add
 
-        if op[1]['new_listing'] == 0 and op[1]['authorizing_account'] == GOBIERO_PAR_ID:
-          in_overdraft_change = True
-          sub_ops = [AccountWhitelist(oph)]
+        if op[1]['new_listing'] == 1 and op[1]['authorizing_account'] == GOBIERO_PAR_ID:
+            in_overdraft_change = True
+            sub_ops = [AccountWhitelist(oph)]
+        elif op[1]['new_listing'] == 0 and op[1]['authorizing_account'] == PROPUESTA_PAR_ID:
+            in_credit_request = True
+            sub_ops = [AccountWhitelist(oph)]
         elif in_overdraft_change:
           in_overdraft_change = False
           sub_ops.append(AccountWhitelist(oph))
@@ -404,9 +478,12 @@ class Account(graphene.ObjectType):
       #elif not in_overdraft_change : history.append(NoDetailOp(oph))
     
       i = i + 1
-      
+
+      last_block = oph['block_num']
+      last_tx    = oph['trx_in_block']
+
     print 'voy a retornar history'
-    return history
+    return history[::-1]
 
 class Query(graphene.ObjectType):
 
@@ -441,6 +518,7 @@ theSchema = graphene.Schema(
   types=[
     NoDetailOp, 
     Transfer, 
+    CreditRequest,
     OverdraftChange,
     AccountWhitelist, 
     OverrideTransfer,

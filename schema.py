@@ -379,7 +379,11 @@ class Account(graphene.ObjectType):
       #print oph['id']
       
       if op[0] == 0: 
-        history.append(Transfer(oph))
+        if op[1]['amount']['asset_id'] != MONEDAPAR_ID:
+          print 'METO UN NO DETAIL'
+          history.append(NoDetailOp(oph))
+        else:
+          history.append(Transfer(oph))
       
       elif op[0] == 7: # Whitelist add
 

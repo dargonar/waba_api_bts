@@ -120,12 +120,14 @@ def multisig_delete_proposal(proposal_id):
   ops = proposal_delete(account_id('gobierno-par'), proposal_id)
   res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par']) #)
 
-def WARNING_multisig_bring_them_all_proposal():
+def WARNING_multisig_bring_them_all_proposal(account):
   init([])
   
   ops = []
   for u in rpc.db_get_asset_holders(assets['MONEDAPAR']['id']):
-    if u['name'] == 'gobierno-par': continue
+    #if u['name'] == 'gobierno-par': continue
+    if u['name'] != account: continue
+
     if u['amount'] == 0: continue
     ops.extend( 
       override_transfer( 
@@ -138,7 +140,9 @@ def WARNING_multisig_bring_them_all_proposal():
     )
 
   for u in rpc.db_get_asset_holders(assets['DESCUBIERTOPAR']['id']):
-    if u['name'] == 'gobierno-par': continue
+    #if u['name'] == 'gobierno-par': continue
+    if u['name'] != account: continue
+
     if u['amount'] == 0: continue
     ops.extend( 
       account_whitelist(
@@ -158,7 +162,7 @@ def WARNING_multisig_bring_them_all_proposal():
       )
     )
   print json.dumps(ops, indent=2)
-  set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+  #set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
   #print json.dumps(ops, indent=2)
 
@@ -237,37 +241,38 @@ def multisig_claim_fees(assets_to_claim):
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 if __name__ == '__main__':
-  init([])
+  # init([])
+  WARNING_multisig_bring_them_all_proposal("moneda-par.prueba")
 
-  asset1, asset2 = rpc.db_get_assets(['1.3.1320', '1.3.1322'])
+  # asset1, asset2 = rpc.db_get_assets(['1.3.1320', '1.3.1322'])
   
-  print "***********************************************************"
-  print "***********************************************************"
-  print "***********************************************************"
+  # print "***********************************************************"
+  # print "***********************************************************"
+  # print "***********************************************************"
 
-  print asset1
+  # print asset1
   
-  memo  = {
-    'message' : '~et:prueba'.encode('hex')
-  }
+  # memo  = {
+  #   'message' : '~et:prueba'.encode('hex')
+  # }
 
-  set_fees_and_broadcast(
-    transfer(
-      account_id('moneda-par.matias'),
-      account_id('propuesta-par'),
-      asset1,
-      3,
-      memo,
-    ) + transfer(
-      account_id('moneda-par.matias'),
-      account_id('propuesta-par'),
-      asset2,
-      2,
-      memo,
-    ),
-    wifs['moneda-par.matias'],
-    asset_id('monedapar')
-  )
+  # set_fees_and_broadcast(
+  #   transfer(
+  #     account_id('moneda-par.matias'),
+  #     account_id('propuesta-par'),
+  #     asset1,
+  #     3,
+  #     memo,
+  #   ) + transfer(
+  #     account_id('moneda-par.matias'),
+  #     account_id('propuesta-par'),
+  #     asset2,
+  #     2,
+  #     memo,
+  #   ),
+  #   wifs['moneda-par.matias'],
+  #   asset_id('monedapar')
+  # )
 
 
   # ops = []
