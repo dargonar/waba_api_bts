@@ -117,19 +117,20 @@ class CreditRequest(graphene.ObjectType):
   
   def __init__(self, ops):
     self.ops   = ops
-    print '*************************** largo %d' % len(ops)
+    print 'CREDIT REQUEST *************************** largo %d' % len(ops)
     print ops
 
-    main_op = ops[-1].oph['op']
+    main_op = ops[-1 if len(ops)==3 else -2].oph['op']
     
     # This is the main OP (ops[1])
     #
     # [ Whitelist, 
     #   Transfer,  
-    #   Transfer ] <==== this
+    #   Transfer,    <==== this
+    #   Whitelist ] 
     
     # Determine asset
-    self.asset = main_op[-1]['amount']
+    self.asset = main_op[1]['amount']
     
     # Determine type
     # self.otype = 'down' if main_op[0] == 38 else 'up'
@@ -160,6 +161,8 @@ class OverdraftChange(graphene.ObjectType):
   def __init__(self, ops):
     self.ops   = ops
 
+    print "OverdraftChange => ", ops
+
     main_op = ops[1].oph['op']
     
     # This is the main OP (ops[1])
@@ -168,13 +171,19 @@ class OverdraftChange(graphene.ObjectType):
     #   AssetIssue,  <==== this
     #   AssetIssue, 
     #   Whitelist ]
-    # or
+    # or 
     # [ Whitelist, 
     #   OverrideTransfer, <==== this
     #   AssetReserve, 
     #   OverrideTransfer, 
     #   AssetReserve, 
     #   Whitelist ]
+    # or 
+    # [ Whitelist, 
+    #   AssetIssue,  <==== this
+    #   AssetIssue, 
+    #   Whitelist
+    #   Whitelist (propuesta-par) ]
     
     # Determine asset
     self.asset = main_op[1]['asset_to_issue'] if 'asset_to_issue' in main_op[1] else main_op[1]['amount']
@@ -336,6 +345,42 @@ class Transfer(graphene.ObjectType):
     if x == f: return 'sent'
     return 'received'
 
+
+templates = [
+  [ CreditRequest, 
+    (7 , []),
+    (0 , []),
+    (0 , []),
+    (7 , []),
+  ],
+  [ CreditRequest,
+    (7 , []),
+    (0 , []),
+    (0 , []),
+  ],
+  [ OverdraftChange,
+    (7  , []),
+    (38 , []),
+    (15 , []),
+    (38 , []),
+    (15 , []),
+    (7  , []),
+  ],
+  [ OverdraftChange,
+    (7  , []),
+    (14 , []),
+    (14 , []),
+    (7  , []),
+    (7  , []),
+  ],
+  [ OverdraftChange,
+    (7  , []),
+    (14 , []),
+    (14 , []),
+    (7  , []),
+  ]
+]
+
 #@Schema.register
 class Account(graphene.ObjectType):
 
@@ -388,102 +433,100 @@ class Account(graphene.ObjectType):
       stop    = int(args.get('stop', 0))
       limit   = int(args.get('limit', 100))
       start   = int(args.get('start', 0))
-    
-#       try:
+
       print '[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start)
-      ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
+      raw_ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
       print '[END] rpc.history_get_relative_account_history '
-#       except Exception as e:
-#         import traceback
-#         print traceback.format_exc()
+
     else:
       stop    = args.get('stop', '1.11.0')
       limit   = int(args.get('limit', 100))
       start   = args.get('start', '1.11.0')
       
       print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
-      ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
-
-      #print json.dumps(ops[:10], indent=2)
-      #print map(lambda x: x['id'], ttt)
+      raw_ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
       print '[END] rpc.history_get_account_history x'
 
-    ops.sort(key=lambda op: ( -op['block_num'], ['op_in_trx']) ) 
-    ops = ops[::-1]
+    txs = []
+
+    # Group ops by tx
+    ops_in_tx = []
+    for o in raw_ops:
+      ops_in_tx.append(o)
+      if o['op_in_trx'] == 0:
+        txs.append(ops_in_tx[::-1])
+        ops_in_tx = []
+
+    def instanceFromOp(oph):
+  
+      #oph = ops[i]
+      op  = oph['op']
+      
+      if op[0] == 0: 
+        return Transfer(oph)
+      
+      elif op[0] == 7: # Whitelist add
+        return AccountWhitelist(oph)
+
+      elif op[0] == 14:
+        return AssetIssue(oph)
+
+      elif op[0] == 15:
+        return AssetReserve(oph)
+        
+      elif op[0] == 38:
+        return OverrideTransfer(oph)
+        
+      else:
+        return NoDetailOp(oph)
 
     history = []
 
-    in_overdraft_change = False
-    in_credit_request   = False
-    sub_ops             = []
+    j = 0
+    while j < len(txs):
 
-    last_block = 0
-    last_tx    = -1
+      ops = txs[j]
+      print '=======>WORKING NEW TX'
 
-    i = 0
-    while i < len(ops):
-      oph = ops[i]
-      op  = oph['op']
-      
-      print '{0}/{1}*******************************************'.format(i, len(ops))
-      print oph['id']
+      i = 0
 
-      #print "=====> TIPO : ",  oph['block_num'], oph['trx_in_block'], oph['op_in_trx'], "---", op[0], in_credit_request, in_overdraft_change
+      # Verificar templates
+      u = 0
+      while u < len(templates):
 
-      if oph['block_num'] != last_block: #or oph['trx_in_block'] != last_tx:
-        in_overdraft_change = False
-        in_credit_request = False
+        ts = templates[u][1:]
 
-        history.extend(sub_ops)
-        sub_ops = [] 
+        if len(ops)-i >= len(ts):
 
-      if op[0] == 0: 
+          pack1 = [ ops[i+x]['op'][0] for x in range(len(ts))  ]
+          pack2 = [ t[0] for t in ts ]
 
-        if in_credit_request:
-          sub_ops.append(Transfer(oph))
-          #print 'TIENE AMOUNT => ', ('amount' in op[1])
-          if op[1]['amount']['asset_id'] in ALL_AVAL_TYPES:
-            in_credit_request = False
-            history.append(CreditRequest(list(sub_ops)))
-            sub_ops = []
-        else:
-          if op[1]['amount']['asset_id'] not in ALL_VALID_ASSETS:
-            history.append(NoDetailOp(oph))
+          print "OPS_ORIG: ", pack1
+          print "TEMPLATE: ", pack2, u, i
+
+          if pack1 == pack2:
+            
+            sub_ops = [ instanceFromOp(ops[i+x]) for x in range(len(ts)) ]
+            history.append( templates[u][0](sub_ops) )
+
+            i += len(ts)
+            u = 0
+
           else:
-            history.append(Transfer(oph))
-      
-      elif op[0] == 7: # Whitelist add
+            u = u + 1
 
-        if op[1]['new_listing'] == 1 and op[1]['authorizing_account'] == GOBIERO_PAR_ID:
-            in_overdraft_change = True
-            sub_ops = [AccountWhitelist(oph)]
-        elif op[1]['new_listing'] == 0 and op[1]['authorizing_account'] == PROPUESTA_PAR_ID:
-            in_credit_request = True
-            sub_ops = [AccountWhitelist(oph)]
-        elif in_overdraft_change:
-          in_overdraft_change = False
-          sub_ops.append(AccountWhitelist(oph))
-          history.append(OverdraftChange(list(sub_ops)))
-          sub_ops = []
+        else:
+          u = u + 1
 
-      elif op[0] == 14 and in_overdraft_change:  # Asset Issue
-        sub_ops.append(AssetIssue(oph))
+      while i < len(ops):
+        print "meto normal ", ops[i]['op'][0]
+        history.append ( instanceFromOp(ops[i]) )
+        i = i + 1
 
-      elif op[0] == 15 and in_overdraft_change: # Asset Reserve
-        sub_ops.append(AssetReserve(oph))
-        
-      elif op[0] == 38 and in_overdraft_change: # Override Transfer
-        sub_ops.append(OverrideTransfer(oph))
-        
-      #elif not in_overdraft_change : history.append(NoDetailOp(oph))
-    
-      i = i + 1
-
-      last_block = oph['block_num']
-      last_tx    = oph['trx_in_block']
-
+      j = j + 1
+       
     print 'voy a retornar history'
-    return history[::-1]
+    return history
 
 class Query(graphene.ObjectType):
 

@@ -171,7 +171,11 @@ if __name__ == '__main__':
         from_id,
         asset_core,
         amount_value(endorse_transfer_op[1]['fee']['amount'], asset_core)
-      ) + [endorse_transfer_op]
+      ) + [endorse_transfer_op] + account_whitelist(
+        PROPUESTA_PAR_ID,
+        from_id,
+        2 #add to black list
+      )
     , None)
 
     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
@@ -225,7 +229,7 @@ if __name__ == '__main__':
   @app.route('/api/v3/searchAccount', methods=['GET'])
   def search_account():
     search = request.args.get('search', '')
-    with_no_credit = int(request.args.get('with_no_credit',0))
+    search_filter = int(request.args.get('search_filter',0))
 
     res = []
     for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
@@ -237,13 +241,19 @@ if __name__ == '__main__':
           
           add_account = True
 
-          if with_no_credit != 0:
+          # Only with no-credit and no black-listed
+          if search_filter == 1:
             p = rpc.db_get_account_balances(tmp[1], [DESCUBIERTO_ID])
             no_credit = p[0]['amount'] == 0
-
             no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
-
             add_account = no_credit and no_black
+          
+          # Only with credit
+          if search_filter == 2:
+            p = rpc.db_get_account_balances(tmp[1], [DESCUBIERTO_ID])
+            has_credit = p[0]['amount'] > 0
+            #no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
+            add_account = has_credit
 
           if add_account:
             res.append( tmp )

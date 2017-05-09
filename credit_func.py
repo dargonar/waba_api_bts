@@ -16,6 +16,7 @@ wifs = {
 
 accounts = {}
 assets   = {}
+assets_by_id = {}
 
 def account_id(name):
   return accounts[name]['account']['id']
@@ -28,7 +29,9 @@ def init(other_accounts):
   accounts = { a[0]:a[1] for a in rpc.db_get_full_accounts(list(set(list(wifs)+other_accounts)), False) }
   
   global assets
-  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.1236','1.3.1237','1.3.1319','1.3.1322','1.3.1320','1.3.1321']) }
+  global assets_by_id
+  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0','1.3.1236','1.3.1237','1.3.1319','1.3.1322','1.3.1320','1.3.1321']) }
+  assets_by_id = { assets[k]['id']:assets[k] for k in assets }
 
 def ops_for_remove(account_name, amount):
   res = override_transfer( 
@@ -108,10 +111,18 @@ def multisig_set_overdraft(accounts_to_issue):
       to_add = new_desc - desc
       ops_w[1:1] = ops_for_issue(account, to_add)
       ops.extend( ops_w )
-  
+
+    # Lo limpiamos de la blacklist de propuesta (para q pueda recibir avals)  
+    ops += account_whitelist(
+      PROPUESTA_PAR_ID,
+      account_id(account),
+      0 #remove from black list
+    )
+
   assert( len(ops) > 0 ), "No hay operaciones parar realizar"
   #print json.dumps(ops, indent=2)
   #return
+
   return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
@@ -240,9 +251,62 @@ def multisig_claim_fees(assets_to_claim):
   set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
+def WARNING_clean_account(orig):
+  
+  balances = rpc.db_get_account_balances(account_id(orig))
+  print json.dumps(balances, indent=2)
+
+  ops = []
+
+  # print json.dumps(assets_by_id, indent=2)
+
+  for b in balances:
+    if b['amount'] == 0 : continue
+    #print b['asset_id'], b['asset_id'] != '1.3.0'
+    if b['asset_id'] != '1.3.0':
+
+      ops += transfer(
+        account_id(orig),
+        assets_by_id[b['asset_id']]['issuer'],
+        assets_by_id[b['asset_id']],
+        amount_value(b['amount'], assets_by_id[b['asset_id']])
+      )
+
+  print len(ops)
+
+  if len(ops) == 0:
+    print "nada para limpiar en ", orig
+    return
+
+  ops = transfer(
+    account_id('propuesta-par'),
+    account_id(orig),
+    assets['BTS'],
+    amount_value(130625*len(ops), assets['BTS'])
+  ) + account_whitelist(
+    account_id('gobierno-par'),
+    account_id(orig),
+    1 #insert into white list
+  ) + account_whitelist(
+    account_id('propuesta-par'),
+    account_id(orig),
+    0 #remove from lists
+  ) + ops
+
+  tx = build_tx_and_broadcast(
+    ops,
+    [wifs['moneda-par.prueba'],wifs['propuesta-par'],wifs['marcio'],wifs['beto']]
+  )
+
+  print json.dumps(tx, indent=2)  
+
+
 if __name__ == '__main__':
-  # init([])
-  WARNING_multisig_bring_them_all_proposal("moneda-par.prueba")
+  #pass
+  init([])
+  WARNING_clean_account("moneda-par.prueba")
+
+  #WARNING_multisig_bring_them_all_proposal("moneda-par.prueba")
 
   # asset1, asset2 = rpc.db_get_assets(['1.3.1320', '1.3.1322'])
   
@@ -292,7 +356,7 @@ if __name__ == '__main__':
   #   "market_fee_percent": 0,
   #   "max_market_fee": 0,
   #   "issuer_permissions": 79,
-  #   "flags": 70,
+  #   "flags": 78,
   #   "core_exchange_rate": {
   #     "base": {
   #       "amount": 100000,
