@@ -1,0 +1,12 @@
+flask
+flask_graphql
+flask_cors
+graphene
+requests
+simplejson
+memcache
+# sudo apt-get install memcached
+python-memcached
+sqlalchemy
+pymysql
+sqlalchemy-datatables
