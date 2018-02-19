@@ -135,6 +135,9 @@ def db_lookup_account_names(names):
 def network_broadcast_transaction(tx):
   return call_rpc('network', 'broadcast_transaction', tx)
 
+def network_broadcast_transaction_sync(tx):
+  return call_rpc('network', 'broadcast_transaction_synchronous', tx)
+
 def participation_rate():
   return calc_participation_rate(int(db_get_dynamic_global_properties()['recent_slots_filled']))
 

@@ -23,6 +23,7 @@
 #include <graphene/chain/protocol/protocol.hpp>
 #include <graphene/chain/protocol/transaction.hpp>
 #include <graphene/chain/protocol/account.hpp>
+#include <graphene/chain/protocol/memo.hpp>
 
 #include <graphene/utilities/key_conversion.hpp>
 

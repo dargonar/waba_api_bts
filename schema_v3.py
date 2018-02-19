@@ -432,8 +432,8 @@ class Account(graphene.ObjectType):
     if args.get('type') == 'relative':
       stop    = int(args.get('stop', 0))
       limit   = int(args.get('limit', 100))
-      start   = int(args.get('start', 0))
-
+      #start   = int(args.get('start', 0))
+      start = 0
       print '[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start)
       raw_ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
       print '[END] rpc.history_get_relative_account_history '
@@ -442,7 +442,8 @@ class Account(graphene.ObjectType):
       stop    = args.get('stop', '1.11.0')
       limit   = int(args.get('limit', 100))
       start   = args.get('start', '1.11.0')
-      
+      start   = '1.11.0' if start == '0' else start
+
       print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
       raw_ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
       print '[END] rpc.history_get_account_history x'
@@ -476,7 +477,7 @@ class Account(graphene.ObjectType):
         
       elif op[0] == 38:
         return OverrideTransfer(oph)
-        
+      
       else:
         return NoDetailOp(oph)
 
@@ -520,7 +521,11 @@ class Account(graphene.ObjectType):
 
       while i < len(ops):
         print "meto normal ", ops[i]['op'][0]
-        history.append ( instanceFromOp(ops[i]) )
+        
+        # HACK HACK CUSTOM_OPERATION
+        if ops[i]['op'][0] != 35:
+          history.append ( instanceFromOp(ops[i]) )
+        
         i = i + 1
 
       j = j + 1

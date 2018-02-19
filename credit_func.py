@@ -303,8 +303,8 @@ def WARNING_clean_account(orig):
 
 if __name__ == '__main__':
   #pass
-  init([])
-  WARNING_clean_account("moneda-par.prueba")
+  #init([])
+  #WARNING_clean_account("moneda-par.prueba")
 
   #WARNING_multisig_bring_them_all_proposal("moneda-par.prueba")
 
@@ -410,12 +410,11 @@ if __name__ == '__main__':
   #multisig_reserve_asset(["MONEDAPAR","DESCUBIERTOPAR"])
   #WARNING_multisig_bring_them_all_proposal()
 
-  # accounts_to_issue = {
-  #   "moneda-par.tuti"    : 1000, 
-  #   # "moneda-par.carlos444" : 30000, 
-  # }
+  #accounts_to_issue = {
+  #  "moneda-par.hectorh"    : 1000
+  #}
 
-  # multisig_set_overdraft(accounts_to_issue)
+  #multisig_set_overdraft(accounts_to_issue)
 
   #print withdraw_permission_create(
   #  account_id('matias'), 
@@ -427,9 +426,23 @@ if __name__ == '__main__':
   #  wifs['matias']
   #)
 
-  # x = multisig_change_keys(
-  #   "moneda-par.tuti", 
-  #   "BTS6NJ7HPBDfLGju7rMFgt92jfuZX6iAxwbbQrzMCWRt5fGZjqKLf",
-  #   "BTS5sKAiePdJZF8H6ZoCm1DE6yQUibT6f3Frd8FzY8agwuJV4EnA2",
-  #   "BTS5CAxUZEwiBntZEaqyawpgS63qWurWYva6hPnoVJm1GzAFQdEmd"
-  # )
+  #init(["moneda-par.edith", "moneda-par.belosoler"])
+
+  #x = multisig_change_keys(
+  #  "moneda-par.edithe",
+  #  "BTS8QGHdWueerJE8SMqwM65iyWqL6cxXPisg31GdD7eqGStZEEzbL",
+  #  "BTS6BgD83U7sX82M2vybwJEYwrMQnGiHDu23JNXSfaPxaTRgAXgT8",
+  #  "BTS6ajNfJEZwwm3g83zYy86kGGwcaBhnBdsHMTcDHHZ7AAKyjjLTH"
+  #)
+
+  y = multisig_change_keys(
+    "moneda-par.andrea",
+    "BTS8YFwSiJvn1r4oenmft9Hkvy9Rp8s1mzYczXVKtz3McGAmJa6Bm",
+    "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
+    "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
+  )
+
+  #accounts_to_issue = {
+  #  "moneda-par.elmercado"    : 30000
+  #}
+  #multisig_set_overdraft(accounts_to_issue)

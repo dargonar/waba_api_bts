@@ -20,6 +20,8 @@ def set_fees(ops, pay_in):
   return ops
 
 def build_tx_and_broadcast(ops, wif, signatures=[]):
+  
+  print "entro con signaturas => ", signatures
   tx = build_tx(
     ops,
     *ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
@@ -46,7 +48,7 @@ def build_tx_and_broadcast(ops, wif, signatures=[]):
 def set_fees_and_broadcast(ops, wif, pay_in):
   ops = set_fees(ops, pay_in)
   if not wif: return ops
-  return build_tx_and_broadcast(ops, wif)
+  return build_tx_and_broadcast(ops, wif, [])
 
 # OPS Func
 def proposal_create(from_id, proposed_ops, wif=None):

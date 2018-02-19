@@ -184,7 +184,7 @@ if __name__ == '__main__':
   def push_tx():
     tx  = request.json.get('tx')
     print tx
-    rpc.network_broadcast_transaction(tx)
+    rpc.network_broadcast_transaction_sync(tx)
     return jsonify( {'ok':'ok'} )
 
 #   @app.route('/api/v2/get_global_properties', methods=['GET'])
@@ -278,7 +278,7 @@ if __name__ == '__main__':
       signature = bts2helper_sign_compact(to_sign, wif)
 
       tx['signatures'] = [signature]
-      p = rpc.network_broadcast_transaction(tx)
+      p = rpc.network_broadcast_transaction_sync(tx)
       return jsonify({'ok':'ok', 'coco':p})
 
     except Exception as e:

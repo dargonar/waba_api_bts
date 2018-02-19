@@ -203,8 +203,9 @@ if __name__ == '__main__':
     if not tx:
       tx = request.json
       
-    rpc.network_broadcast_transaction(tx)
-    return jsonify( {'ok':'ok'} )
+    res = rpc.network_broadcast_transaction_sync(tx)
+    print json.dumps(res, indent=2)
+    return jsonify( {'res':res} )
 
 #   @app.route('/api/v3/get_global_properties', methods=['GET'])
 #   def db_get_global_properties():
@@ -224,7 +225,11 @@ if __name__ == '__main__':
 
   @app.route('/api/v3/account/<account>', methods=['GET'])
   def get_account(account):
-    return jsonify( rpc.db_get_account_by_name(ACCOUNT_PREFIX+account) )
+
+    if str(account) != str('gobierno-par'):
+      account = ACCOUNT_PREFIX+account
+
+    return jsonify( rpc.db_get_account_by_name(account) )
   
   @app.route('/api/v3/searchAccount', methods=['GET'])
   def search_account():
@@ -317,7 +322,8 @@ if __name__ == '__main__':
       signature = bts2helper_sign_compact(to_sign, wif)
 
       tx['signatures'] = [signature]
-      p = rpc.network_broadcast_transaction(tx)
+      p = rpc.network_broadcast_transaction_sync(tx)
+      print json.dumps(p, indent=2)
       return jsonify({'ok':'ok', 'coco':p})
 
     except Exception as e:

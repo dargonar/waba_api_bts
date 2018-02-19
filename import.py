@@ -99,7 +99,7 @@ def do_import():
           my_block = undo_block(db, my_block)
         else:
           
-          to_block = min(from_block+5000, last_block_num)
+          to_block = min(from_block+100, last_block_num)
           
           blocks = rpc.db_get_blocks(from_block, to_block)
                     
@@ -114,7 +114,12 @@ def do_import():
           for blk_inx, next_block in enumerate(blocks):
             for trx_in_block, tx in enumerate(next_block['transactions']):
               
-              to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+              ppp = tx
+              try:
+                to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+              except Exception as ex:
+                print json.dumps(tx)
+                raise ex
               for le in db.query(LastError).filter(LastError.txid == to_sign).all():
                 le.block_num = new_block.block_num
                 le.trx_in_block = trx_in_block

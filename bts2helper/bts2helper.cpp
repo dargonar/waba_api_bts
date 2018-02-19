@@ -5,6 +5,7 @@
 #include <boost/array.hpp>
 
 #include <fc/io/json.hpp>
+#include <fc/variant_object.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/crypto/ripemd160.hpp>
 
@@ -20,6 +21,7 @@
 #include <graphene/chain/protocol/protocol.hpp>
 #include <graphene/chain/protocol/transaction.hpp>
 #include <graphene/chain/protocol/account.hpp>
+#include <graphene/chain/protocol/memo.hpp>
 
 #include <graphene/utilities/key_conversion.hpp>
 
@@ -37,7 +39,6 @@ std::string bts2helper_memo_encode(const std::string& priv, const std::string& p
 
   return fc::json::to_string(data);
 }
-
 
 std::string bts2helper_memo_decode(const std::string& priv, const std::string& pub, const std::string& memo_from, const std::string& memo_to,
                  const std::string& memo_nonce, const std::string& memo_message) {

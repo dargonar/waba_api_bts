@@ -106,6 +106,22 @@ class AccountBalance(Base, TimestampMixin):
       'amount' : amount_value(self.amount,{'precision':4})
     }
 
+class UserData(Base, TimestampMixin):
+  __tablename__ = 'user_data'
+  
+  id             = Column(Integer, primary_key=True)
+  wallet_name    = Column(String(64))
+
+  name           = Column(String(64))
+  category       = Column(String(64))
+  address        = Column(String(64))
+  lat            = Column(String(64))
+  lon            = Column(String(64))
+  emp_web        = Column(String(64))
+  contacto_email = Column(String(64))
+  contacto_tel   = Column(String(64))
+
+
 class Transfer(Base, TimestampMixin):
   __tablename__ = 'transfer'
   

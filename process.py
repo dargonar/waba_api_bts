@@ -18,6 +18,7 @@ from models import *
 from ops_func import *
 
 from bts2helper import *
+from credit_func import multisig_set_overdraft
 
 valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]
 
@@ -67,6 +68,8 @@ def user_authorize_user(t):
 
 def user_applies_authorization(t):
 
+  print "ENTER => user_applies_authorization"
+
   endorse_type  = t.amount_asset
 
   if endorse_type not in valid_assets:
@@ -91,7 +94,6 @@ def user_applies_authorization(t):
   }
 
   # HACK : poner las privadas en orden y los owner de los assets
-  from credit_func import multisig_set_overdraft
   multisig_set_overdraft(accounts_to_issue)
 
 def user_transfer_authorizations(t):
