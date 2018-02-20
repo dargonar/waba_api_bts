@@ -6,6 +6,7 @@ requests
 simplejson
 memcache
 # sudo apt-get install memcached
+websocket-client
 python-memcached
 sqlalchemy
 pymysql
