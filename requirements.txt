@@ -4,7 +4,7 @@ flask_cors
 graphene
 requests
 simplejson
-memcache
+# memcache
 # sudo apt-get install memcached
 websocket-client
 python-memcached
