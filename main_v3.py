@@ -1,10 +1,11 @@
+# coding: utf-8
 import os
 import sys
 import logging
 import traceback
 import time
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from flask import Flask, jsonify, make_response, request, g
@@ -31,7 +32,11 @@ from memcache import Client
 import rpc
 import cache
 
+import init_model
+
 ERR_UNKNWON_ERROR    = 'unknown_error'
+
+REGISTER_PRIVKEY = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 
 def create_app(**kwargs):
   app = Flask(__name__)
@@ -64,116 +69,328 @@ if __name__ == '__main__':
   def unhandled_exception(e):
     return make_response(jsonify({'error': str(e)}), 500)
   
-#   @app.route('/api/v3/transfer', methods=['POST'])
-#   def transfer():
-#     try:
-#       req = request.json
-
-#       def build_amount( a ):
-#         if not a: return None
-#         return { "amount": int(Decimal(a)*ASSET_PRECISION), "asset_id" : ASSET_ID }
-      
-#       print req.get('from')
-#       _from  = rpc.db_get_account_by_name( ACCOUNT_PREFIX + req.get('from') )['id']
-#       to     = req.get('to')
-#       amount = build_amount ( req.get('amount') )
-#       memo   = req.get('memo')
-
-#       top = transfer_op(_from, to, amount, memo)
-#       top[1]['fee'] = rpc.db_get_required_fees([top], ASSET_ID)[0]
-      
-#       ref_block_num, ref_block_prefix = ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
-#       tx = build_tx([top], ref_block_num, ref_block_prefix)
-#       to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-
-#       return jsonify( {'tx':tx, 'to_sign':to_sign} )
-      
-#     except Exception as e:
-#       logging.error(traceback.format_exc())
-#       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
-
-  # ############################################    
-  # Backend api 
-  # ############################################
-  # @app.route('/backend/dt/holding', methods=['GET'])
-  # def holding():
+  @app.route('/api/v3/dashboard/kpis', methods=['POST', 'GET'])
+  def dashboard_kpis():
     
-  #   columns = []
-  #   columns.append(ColumnDT('id'))
-  #   columns.append(ColumnDT('name'))
-  #   #columns.append(ColumnDT('address.description')) # where address is an SQLAlchemy Relation
-  #   #columns.append(ColumnDT('created_at', filter=str))
-
-  #   # defining the initial query depending on your purpose
-  #   query = DBSession.query(AccountBalance) #.join(Address).filter(Address.id > 14)
-
-  #   # instantiating a DataTable for the query and table needed
-  #   rowTable = DataTables(request.args, AccountBalance, query, columns)
-
-  #   # returns what is needed by DataTable
-  #   return jsonify( rowTable.output_result() )
-
-  @app.route('/api/v3/endorse/apply', methods=['POST'])
+    main_asset = rpc.db_get_assets([DISCOIN_ID])
+    users      = rpc.db_get_asset_holders_count(DISCOIN_ID)
+    
+    _now = datetime.utcnow()
+    
+    return jsonify( 
+        {
+          'updated_at': str(_now),
+          'main_asset':main_asset,
+          'airdrop': {
+            'issued': 1500,
+            'max_supply': 10000000,
+            'tx_quantity': 1524,
+            'max_tx_quantity': 100000
+          },
+          'businesses': {
+            'quantity': {
+              'by_status': {
+                'ok': 582,
+                'yellow': 452,
+                'red': 556,
+                'out': 10
+              },
+              'by_initial_credit': [
+                {
+                  'initial_credit': 10000,
+                  'quantity': 15
+                },
+                {
+                  'initial_credit': 15000,
+                  'quantity': 50
+                },
+                {
+                  'initial_credit': 20000,
+                  'quantity': 36
+                }
+              ],
+            'new_businesses': [
+              {
+                'quantity': '15000',
+                'timestamp': str(_now + timedelta(days=-1))
+              },
+              {
+                'quantity': '15001',
+                'timestamp': str(_now + timedelta(days=-2))
+              },
+              {
+                'quantity': '15002',
+                'timestamp': str(_now + timedelta(days=-3))
+              },
+            ]
+          },
+          'transactions': {
+            'total_quantity': '15230000',
+            'daily': [{
+                'quantity': '15000',
+                'timestamp': str(_now + timedelta(days=-1))
+              },
+              {
+                'quantity': '15001',
+                'timestamp': str(_now + timedelta(days=-2))
+              },
+              {
+                'quantity': '15002',
+                'timestamp': str(_now + timedelta(days=-3))
+              },
+            ]
+          },
+          'users': {
+            'holders': users,
+            'registered': users,
+            'new_users': [{
+                'quantity': '15000',
+                'timestamp': str(_now + timedelta(days=-1))
+              },
+              {
+                'quantity': '15001',
+                'timestamp': str(_now + timedelta(days=-2))
+              },
+              {
+                'quantity': '15002',
+                'timestamp': str(_now + timedelta(days=-3))
+              },
+            ]
+          }
+        }
+      } 
+    )
+    
+  @app.route('/api/v3/dashboard/configuration', methods=['POST', 'GET'])
+  def dashboard_configuration():
+    if request.method=='GET':
+      nm = None
+      with session_scope() as db:
+        #ret = db.query(NameValue).filter(NameValue.name=='configuration').first()
+        nm, is_new = get_or_create(db, NameValue, name  = 'configuration')
+        if is_new:
+          nm.value = init_model.get_default_configuration()
+        db.expunge(nm)
+      
+      asset_balance, asset_overdraft, asset_invite = rpc.db_get_assets([DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID])
+      
+      asset_balance['key']    = 'balance'
+      asset_overdraft['key']  = 'descubierto' 
+      asset_invite['key']     = 'invitado'
+      assets                  = {'asset_balance':asset_balance, 'asset_overdraft':asset_overdraft, 'asset_invite':asset_invite}
+      return jsonify( { 'configuration': nm.value if nm.value else '', 'assets' : assets, 'updated_at' : nm.updated_at } );
+    
+    if request.method=='POST':
+      return jsonify( {'method':request.method} );
+  
+  @app.route('/api/v3/dashboard/categories', methods=['POST', 'GET'])
+  def dashboard_categories():
+    if request.method=='GET':
+      nm = None
+      with session_scope() as db:
+        #ret = db.query(NameValue).filter(NameValue.name=='configuration').first()
+        nm, is_new = get_or_create(db, NameValue, name  = 'categories')
+        if is_new:
+          nm.value = init_model.get_default_categories()
+        db.expunge(nm)
+      return jsonify( { 'categories': nm.value if nm.value else '', 'updated_at' : nm.updated_at } );
+    
+    if request.method=='POST':
+      return jsonify( {'method':request.method} );
+    
+  @app.route('/api/v3/dashboard/business/<with_balance>/<skip>/<count>', methods=['GET'])
+  def dashboard_business(with_balance, skip, count):
+#     init_model.init_categories()
+#     init_model.init_businesses()
+#     init_model.init_discount_schedule()
+    
+    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+    with session_scope() as db:
+#       return jsonify( { 'businesses': [ x.to_dict(str2bool(with_balance)) for x in db.query(Business).all()] } );
+      return jsonify( { 'businesses': [ x.to_dict(str2bool(with_balance)) for x in db.query(Business).all()] } );
+    
+  
+  @app.route('/api/v3/dashboard/business/<account_id>/profile/<with_balance>', methods=['GET'])
+  def dashboard_business_profile(account_id, with_balance):
+    with session_scope() as db:
+      return jsonify( { 'business': db.query(Business).filter(Business.account_id==account_id).first().to_dict(str2bool(with_balance))} );
+  
+#   @app.route('/api/v3/overdraft/invite', methods=['POST'])
+#   def invite_overdraft():
+#     business_name   = request.json.get('business_name')  
+#     initial_credit  = request.json.get('initial_credit')    
+#     business_id     = cache.get_account_id(business_name)
+    
+  @app.route('/api/v3/endorse/create', methods=['POST'])
   def endorse_create():
+    # TEST: curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz1","initial_credit":"10000"}' http://35.163.59.126:8080/api/v3/endorse/create
     
-    valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]    
+    business_name   = request.json.get('business_name')  
+    initial_credit  = request.json.get('initial_credit')
+
+    tx = endorse_create_impl(business_name, initial_credit)
     
-    _from        = request.json.get('from')  
-    endorse_type = request.json.get('endorse_type')
-
-    from_id = cache.get_account_id(ACCOUNT_PREFIX + _from)
-
-    if endorse_type not in valid_assets:
-      return jsonify({'error':'invalid_endorsement'})
-
-    p = rpc.db_get_account_balances(from_id, [endorse_type])
+    return jsonify( {'tx':tx} )
+  
+  def endorse_create_impl(business_name, initial_credit):
+    
+    business_id     = cache.get_account_id(business_name)
+    #     from_id        = cache.get_account_id(ACCOUNT_PREFIX + _from)
+    #     DISCOIN_ADMIN_ID = '1.2.18'
+    #     DISCOIN_ID
+    #     DISCOIN_CREDIT_ID   = '1.3.2' # DESCUBIERTO 
+    #     DISCOIN_ACCESS_ID   = '1.3.3' # ENDORSEMENT
+    
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #1'
+    # TODO: utilizar el sender(to) en vez de DISCOIN_ADMIN_ID.
+    # Check if admin account has access tokens.
+    p = rpc.db_get_account_balances(DISCOIN_ADMIN_ID, [DISCOIN_ACCESS_ID])
     if p[0]['amount'] == 0:
       return jsonify({'error':'no_endorsement_available'})
+    
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #2'
+    # Check if business has credit.
+    p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
+    if p[0]['amount'] > 0:
+      return jsonify({'error':'already_have_credit'})
+    
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #3'
+    p = rpc.db_get_account_balances(business_id, [DISCOIN_ACCESS_ID])
+    if p[0]['amount'] > 0:
+      return jsonify({'error':'already_have_endorsement'})
 
-    if from_id not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #4'
+    asset, asset_core = rpc.db_get_assets([DISCOIN_ACCESS_ID, CORE_ASSET])
+    
+    # ~ie:<%y%m%d>:<1.2.1526>:25000
+    utc_now = datetime.utcnow().strftime('%y%m%d')
+    memo = {
+      'message' : '~ie:{0}:{1}:{2}'.format(utc_now, business_id, initial_credit).encode('hex')
+    }
+    
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #5'
+    # transfer_op(_from, _to, amount, memo=None, fee=None)
+    # get_prototype_operation transfer_operation
+#     endorse_transfer_op = transfer_op()
+    endorse_transfer_op = transfer(DISCOIN_ADMIN_ID, business_id, asset, initial_credit, memo, None, CORE_ASSET)
+    # def transfer(from_id, to_id, asset, amount, memo=None, wif=None, pay_in=CORE_ASSET):
+    
+    # Para ver prototipos de TXs ver http://docs.bitshares.org/bitshares/tutorials/construct-transaction.html 
+
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #6'
+    #get_prototype_operation account_whitelist_operation
+    tx = build_tx_and_broadcast(
+      account_whitelist(
+        DISCOIN_ADMIN_ID,
+        business_id,
+        0 #remove from black list
+      ) 
+      + [endorse_transfer_op[0]] 
+      + account_whitelist(
+        DISCOIN_ADMIN_ID,
+        business_id,
+        2 #add to black list
+      )
+    , None)
+    
+    print ' ======================================================'
+    print ' ====== XX endorse_create_impl #7'
+    print ' ======================================================'
+    
+    return tx
+
+  @app.route('/api/v3/endorse/create/broadcast', methods=['POST'])
+  def endorse_create_and_broadcast():
+    # TEST: curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz3","initial_credit":"12500"}' http://35.163.59.126:8080/api/v3/endorse/create/broadcast
+    business_name   = request.json.get('business_name')  
+    initial_credit  = request.json.get('initial_credit')
+#     op_id           = request.json.get('op_id')
+    print ' ======================================================'
+    print ' ====== endorse_create_and_broadcast #1'
+    
+    tx  = endorse_create_impl(business_name, initial_credit)
+    
+    print ' ======================================================'
+    print ' ====== endorse_create_and_broadcast #2'
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    
+    print ' ======================================================'
+    print ' ====== endorse_create_and_broadcast #3'
+    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+    
+    tx['signatures'] = [signature]
+    
+    res = rpc.network_broadcast_transaction_sync(tx)
+    print json.dumps(res, indent=2)
+    return jsonify( {'res':res} )
+  
+  @app.route('/api/v3/endorse/apply', methods=['POST'])
+  def endorse_apply():
+    
+    business_name   = request.json.get('business_name')  
+    initial_credit  = request.json.get('initial_credit')
+
+    tx = endorse_apply_impl(business_name, initial_credit)
+    return jsonify( {'tx':tx} )
+    
+  def endorse_apply_impl(business_name):
+    
+    business_id = cache.get_account_id(business_name)
+
+    access_balance = rpc.db_get_account_balances(business_id, [DISCOIN_ACCESS_ID])
+    if access_balance[0]['amount'] == 0:
+      return jsonify({'error':'no_endorsement_available'})
+
+    if business_id not in rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['blacklisted_accounts']:
       return jsonify({'error':'no_endore_state'})
 
-    p = rpc.db_get_account_balances(from_id, [DESCUBIERTO_ID])
+    p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
     if p[0]['amount'] > 0:
       return jsonify({'error':'already_have_credit'})
 
-    asset, asset_core = rpc.db_get_assets([endorse_type, CORE_ASSET])
+    asset, asset_core = rpc.db_get_assets([DISCOIN_ACCESS_ID, CORE_ASSET])
     
     memo = {
       'message' : '~ae'.encode('hex')
     }
 
-    endorse_transfer_op = transfer(
-      from_id,
-      PROPUESTA_PAR_ID,
+    apply_transfer_op = transfer(
+      business_id,
+      DISCOIN_ADMIN_ID,
       asset,
-      1,
+      access_balance[0]['amount'],
       memo,
       None,
       CORE_ASSET
     )[0]
 
     print "************************************************"
-    print json.dumps(endorse_transfer_op, indent=2)
+    print json.dumps(apply_transfer_op, indent=2)
     print "*********************"
 
     # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
-    print "toma => ", endorse_transfer_op[1]['fee']['amount']
+    print "toma => ", apply_transfer_op[1]['fee']['amount']
     print "************************************************"
 
     tx = build_tx_and_broadcast(
       account_whitelist(
-        PROPUESTA_PAR_ID,
-        from_id,
+        DISCOIN_ADMIN_ID,
+        business_id,
         0 #remove from black list
       ) + transfer(
-        PROPUESTA_PAR_ID,
-        from_id,
+        DISCOIN_ADMIN_ID,
+        business_id,
         asset_core,
-        amount_value(endorse_transfer_op[1]['fee']['amount'], asset_core)
-      ) + [endorse_transfer_op] + account_whitelist(
-        PROPUESTA_PAR_ID,
-        from_id,
+        amount_value(apply_transfer_op[1]['fee']['amount'], asset_core)
+      ) + [apply_transfer_op] + account_whitelist(
+        DISCOIN_ADMIN_ID,
+        business_id,
         2 #add to black list
       )
     , None)
@@ -182,8 +399,42 @@ if __name__ == '__main__':
     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
     tx['signatures'] = [signature]
-    return jsonify( {'tx':tx} )
-
+    return tx #jsonify( {'tx':tx} )
+  
+  @app.route('/api/v3/endorse/apply/broadcast', methods=['POST'])
+  def endorse_apply_and_broadcast():
+    # TEST: 
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz1","initial_credit":"10000"}' http://35.163.59.126:8080/api/v3/endorse/apply/broadcast
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz2","initial_credit":"15000"}' http://35.163.59.126:8080/api/v3/endorse/apply/broadcast
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz3","initial_credit":"12500"}' http://35.163.59.126:8080/api/v3/endorse/apply/broadcast
+    business_name   = request.json.get('business_name')  
+    initial_credit  = request.json.get('initial_credit')
+    
+    wifs = { 'discoin.biz1' : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
+             'discoin.biz2' : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
+             'discoin.biz3' : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9'}
+#     op_id           = request.json.get('op_id')
+    print ' ======================================================'
+    print ' ====== endorse_apply_and_broadcast #1'
+    
+#     tx  = endorse_apply_impl(business_name, initial_credit)
+    tx  = endorse_apply_impl(business_name)
+    
+    print ' ======================================================'
+    print ' ====== endorse_apply_and_broadcast #2'
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    
+    print ' ======================================================'
+    print ' ====== endorse_apply_and_broadcast #3'
+    signature = bts2helper_sign_compact(to_sign, wifs[business_name])
+    
+    if not tx['signatures']: tx['signatures'] = []
+    tx['signatures'].append(signature);
+    
+    res = rpc.network_broadcast_transaction_sync(tx)
+    print json.dumps(res, indent=2)
+    return jsonify( {'res':res} )
+  
   @app.route('/api/v3/push_id', methods=['POST'])
   def push_id():
     with session_scope() as db:
@@ -334,4 +585,4 @@ if __name__ == '__main__':
   def not_found(error):
     return make_response(jsonify({'error': 'not_found'}), 404)
   
-  app.run(host="127.0.0.1", port=int(os.environ.get("PORT",8080)))
+  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",8080)))

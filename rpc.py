@@ -18,7 +18,8 @@ import logging
 # requests_log.propagate = True
 
 
-RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:8090/rpc')
+# RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:11011/rpc')
+RPC_NODE = 'http://localhost:11011/rpc'
 # print 'using RPC @ ', RPC_NODE
 
 class RpcError(Exception):
@@ -36,7 +37,7 @@ API_ID = {
 }
 
 def call_rpc_impl(api, method, *params):
-  url     = RPC_NODE #'http://localhost:8090/rpc'
+  url     = RPC_NODE 
   headers = {
     'content-type'  : 'application/json',
     #'Authorization' : 'Basic Ynl0ZW1hc3RlcjpzdXBlcnNlY3JldA=='
@@ -76,6 +77,9 @@ def db_get_objects(objects):
 
 def db_get_asset_holders(asset_id):
   return call_rpc('asset', 'get_asset_holders', asset_id)
+
+def db_get_asset_holders_count(asset_id):
+  return call_rpc('asset', 'get_asset_holders_count', asset_id)
 
 def db_get_key_references(key):
   return call_rpc('db', 'get_key_references', key)

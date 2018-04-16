@@ -14,26 +14,35 @@ def amount_of(asset, amount):
   return {'asset_id' : asset['id'], 'amount': int_amount}
 
 def set_fees(ops, pay_in):
+  print ' ================ ops_func::set_fees #1'
+#   print ' == ops:'
+#   print json.dumps(ops, indent=2)
+#   print ' == pay_in:'
+#   print json.dumps(pay_in, indent=2)
   fees = rpc.db_get_required_fees(ops, pay_in)
+  print ' ================ ops_func::set_fees #2'
   for i in xrange(len(ops)):
+    print ' ================ ops_func::set_fees #3'
     ops[i][1]['fee'] = fees[i]
+  print ' ================ ops_func::set_fees #4'
   return ops
 
 def build_tx_and_broadcast(ops, wif, signatures=[]):
   
+  print ' ================ ops_func::build_tx_and_broadcast #1'
   print "entro con signaturas => ", signatures
   tx = build_tx(
     ops,
     *ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
   )
-  
+  print ' ================ ops_func::build_tx_and_broadcast #2'
   if not wif:
     #print json.dumps(tx, indent=2)
     return tx
 
   if type(wif) != list:
     wif = [wif]
-    
+  
   to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
   
   tx['signatures'] = signatures
@@ -46,7 +55,9 @@ def build_tx_and_broadcast(ops, wif, signatures=[]):
   return to_sign
 
 def set_fees_and_broadcast(ops, wif, pay_in):
+  print ' ================ ops_func::set_fees_and_broadcast #1'
   ops = set_fees(ops, pay_in)
+  print ' ================ ops_func::set_fees_and_broadcast #2'
   if not wif: return ops
   return build_tx_and_broadcast(ops, wif, [])
 
@@ -62,7 +73,9 @@ def proposal_create(from_id, proposed_ops, wif=None):
   build_tx_and_broadcast(ops, wif)
 
 def transfer(from_id, to_id, asset, amount, memo=None, wif=None, pay_in=CORE_ASSET):
+  print ' ================ ops_func::transfer #1'
   t_op  = transfer_op( from_id, to_id, amount_of(asset, amount), memo )
+  print ' ================ ops_func::transfer #2'
   return set_fees_and_broadcast([t_op], wif, pay_in)
 
 def asset_issue(issuer_id, to_account_id, asset, amount, wif=None, pay_in=CORE_ASSET):

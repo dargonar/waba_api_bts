@@ -82,20 +82,21 @@ def do_import():
       
       # Check participation rate
       pr = rpc.calc_participation_rate(int(dgp['recent_slots_filled']))
-      if int(pr) < 80:
-        print 'Participation rate too low'
-        return
+      #HACK para testear!
+#       if int(pr) < 80:
+#         print 'Participation rate too low'
+#         return
       
       last_block_num = dgp['head_block_number']
       
-      while last_block_num > my_block.block_num:
+      while not my_block or last_block_num > my_block.block_num:
         
-        from_block = int(my_block.block_num+1)
+        from_block = int(my_block.block_num+1 if my_block else 1)
         print from_block
         
         next_block = rpc.db_get_block_header(from_block)
         
-        if next_block['previous'] != my_block.block_id:
+        if my_block and next_block['previous'] != my_block.block_id:
           my_block = undo_block(db, my_block)
         else:
           
@@ -127,6 +128,10 @@ def do_import():
               for op_in_trx, op in enumerate(tx['operations']):
                 if not ( op[0] == 0 and op[1]['amount']['asset_id'] in ALL_TRACKED_ASSETS ):
                   continue
+                print '======================================'
+                print 'do_importfound TX'
+                print op[1]['amount']['asset_id']
+                print 'END =================================='
                 t = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
                 db.add(t)
          

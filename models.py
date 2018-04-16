@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, UniqueConstraint, func
 from sqlalchemy import or_, and_
 from sqlalchemy import MetaData, Column, Table, ForeignKey, TypeDecorator
 from sqlalchemy import BigInteger, Integer, String, DateTime, Enum, Boolean, Date, Numeric, Text, Unicode, UnicodeText
+from sqlalchemy.types import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
 from sqlalchemy.sql import select
@@ -37,7 +38,7 @@ naming_convention = {
 
 def get_engine():
   strconn = DB_URL
-  return create_engine(strconn, echo=False, poolclass=NullPool)
+  return create_engine(strconn, echo=False, poolclass=NullPool, encoding='utf8')
 
 def get_metadata():
   return MetaData(bind=get_engine(), naming_convention=naming_convention)
@@ -163,3 +164,117 @@ class LastError(Base, TimestampMixin):
   block_num    = Column(Integer)
   trx_in_block = Column(Integer)
 
+class NameValue(Base, TimestampMixin):
+  __tablename__ = 'name_value'
+  id           = Column(Integer, primary_key=True)
+  name         = Column(String(256), index=True)
+  value        = Column(JSON)
+  
+class Category(Base, TimestampMixin):
+  __tablename__ = 'category'
+  id           = Column(Integer, primary_key=True)
+  name         = Column(String(256), index=True)
+  description  = Column(String(256), index=True)
+  parent_id    = Column(Integer, index=True)
+  
+  def to_dict(self):
+    return {
+      'id'          : self.id,
+      'name'        : self.name,
+      'description' : self.description,
+      'parent_id'   : self.parent_id
+    }
+
+class Business(Base, TimestampMixin):
+  __tablename__     = 'business'
+  id                = Column(Integer, primary_key=True)
+  name              = Column(String(256), index=True)
+  description       = Column(String(256))
+  account           = Column(String(256), index=True)
+  account_id        = Column(String(32), index=True)
+#   category_id       = Column(Integer, index=True)
+  category_id       = Column(Integer, ForeignKey("category.id"))
+#   subcategory_id    = Column(Integer, index=True)
+  subcategory_id    = Column(Integer, ForeignKey("category.id"))
+  balance           = Column(BigInteger, default=0)
+  total_refunded    = Column(BigInteger, default=0)
+  total_discounted  = Column(BigInteger, default=0)
+  initial_credit    = Column(BigInteger, default=0)
+  discount          = Column(Numeric(5,2), index=True)
+  image             = Column(String(256))
+  location          = Column(String(256))
+  latitude          = Column(Numeric(10,8), index=True)
+  longitude         = Column(Numeric(11,8), index=True)
+  address           = Column(String(256))
+  
+  category = relationship('Category', foreign_keys=category_id)
+  subcategory = relationship('Category', foreign_keys=subcategory_id)
+  discount_schedule = relationship("DiscountSchedule", back_populates="business")
+  
+#   billing_address_id = Column(Integer, ForeignKey("address.id"))
+#   billing_address = relationship("Address", foreign_keys=[billing_address_id])
+    
+  def to_dict(self, get_balances=False):
+    if get_balances:
+      p = rpc.db_get_account_balances(self.account_id, [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID])
+    return {
+        'id'              : self.id,
+        'name'            : self.name,
+        'description'     : self.description,
+        'account'         : self.account,
+        'account_id'      : self.account_id,
+        'category_id'     : self.category_id,
+        'subcategory_id'  : self.subcategory_id,
+        'balance'         : self.balance,
+        'initial_credit'  : self.initial_credit,
+        'balances'        : p if get_balances else {},
+        'total_refunded'  : self.total_refunded,
+        'total_discounted': self.total_discounted,
+        
+        'discount' : self.discount,
+        'image' : self.image,
+        'location' : self.location,
+        'latitude' : self.latitude,
+        'longitude' : self.longitude,
+        'address' : self.address,
+        'category' : self.category.to_dict() if self.category else None,
+        'subcategory' : self.subcategory.to_dict() if self.subcategory else None,
+        'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else []
+    }
+  
+  def from_dict(self, dict):
+    self.name = dict['name']
+    self.description  = dict['description']
+    self.account  = dict['account']
+    self.account_id = dict['account_id']
+    self.category_id  = dict['category_id']
+    self.subcategory_id = dict['subcategory_id']
+    self.balance  = dict['balance']
+    self.total_refunded = dict['total_refunded']
+    self.total_discounted = dict['total_discounted']
+    self.initial_credit = dict['initial_credit']
+    self.discount = dict['discount']
+    self.image  = dict['image']
+    self.location = dict['location']
+    self.latitude = dict['latitude']
+    self.longitude  = dict['longitude']
+    self.address  = dict['address']
+    
+  
+class DiscountSchedule(Base, TimestampMixin):
+  __tablename__     = 'discount_schedule'
+  id                = Column(Integer, primary_key=True)
+#   business_id       = Column(Integer, index=True)
+  business_id       = Column(Integer, ForeignKey('business.id'))
+  date              = Column(String(32), index=True)
+  discount          = Column(Numeric(5,2), index=True)
+  
+  business          = relationship("Business", back_populates="discount_schedule")
+    
+  def to_dict(self):
+    return {
+      'id' : self.id,
+      'business_id' : self.business_id,
+      'date' : self.date,
+      'discount' : self.discount
+    }

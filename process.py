@@ -18,83 +18,80 @@ from models import *
 from ops_func import *
 
 from bts2helper import *
-from credit_func import multisig_set_overdraft
+from credit_func import set_overdraft #, multisig_set_overdraft
 
-valid_assets = [AVAL_1000, AVAL_10000, AVAL_30000]
+valid_assets = [DISCOIN_ACCESS_ID]
 
-def user_authorize_user(t):
+# def user_authorize_user(t):
 
-  to            = t.memo[8:].decode('hex')
-  to_id         = cache.get_account_id(unicode(ACCOUNT_PREFIX + to))
-  from_name     = real_name(t.from_name)
-  endorse_type  = t.amount_asset
+#   to            = t.memo[8:].decode('hex')
+#   to_id         = cache.get_account_id(unicode(ACCOUNT_PREFIX + to))
+#   from_name     = real_name(t.from_name)
+#   endorse_type  = t.amount_asset
 
-  if endorse_type not in valid_assets:
-    raise Exception('invalid_endorsement')
+#   if endorse_type not in valid_assets:
+#     raise Exception('invalid_endorsement')
 
-  p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
-  if p[0]['amount'] > 0:
-    raise Exception('already_have_credit')
+#   p = rpc.db_get_account_balances(to_id, [DESCUBIERTO_ID])
+#   if p[0]['amount'] > 0:
+#     raise Exception('already_have_credit')
 
-  if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
-    raise Exception('already_endorsed')
+#   if to_id in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']:
+#     raise Exception('already_endorsed')
 
-  asset = rpc.db_get_assets([endorse_type])[0]
-  memo  = {
-    'message' : '~eb:{0}'.format(from_name).encode('hex')
-  }
+#   asset = rpc.db_get_assets([endorse_type])[0]
+#   memo  = {
+#     'message' : '~eb:{0}'.format(from_name).encode('hex')
+#   }
 
-  tx = build_tx_and_broadcast(
-      transfer(
-        PROPUESTA_PAR_ID,
-        to_id,
-        asset,
-        1,
-        memo
-      ) + account_whitelist(
-        PROPUESTA_PAR_ID,
-        to_id,
-        2 #insert into black list
-      )
-    , None)
+#   tx = build_tx_and_broadcast(
+#       transfer(
+#         PROPUESTA_PAR_ID,
+#         to_id,
+#         asset,
+#         1,
+#         memo
+#       ) + account_whitelist(
+#         PROPUESTA_PAR_ID,
+#         to_id,
+#         2 #insert into black list
+#       )
+#     , None)
 
-  to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-  signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
-  tx['signatures'] = [signature]
+#   to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+#   signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+#   tx['signatures'] = [signature]
 
-  print tx
-  p = rpc.network_broadcast_transaction(tx)
-  return to_sign
+#   print tx
+#   p = rpc.network_broadcast_transaction(tx)
+#   return to_sign
 
 def user_applies_authorization(t):
-
+  
+  print '==========================================='
   print "ENTER => user_applies_authorization"
 
   endorse_type  = t.amount_asset
 
   if endorse_type not in valid_assets:
+    print ' == INVALID ASSET'
     raise Exception('invalid_endorsement')
 
-  p = rpc.db_get_account_balances(t.from_id, [DESCUBIERTO_ID])
+  p = rpc.db_get_account_balances(t.from_id, [DISCOIN_CREDIT_ID])
   if p[0]['amount'] > 0:
+    print ' == already_have_credit'
     raise Exception('already_have_credit')
 
-  amount = 0
-  if endorse_type == AVAL_1000:
-    amount = 1000
-  elif endorse_type == AVAL_10000:
-    amount = 10000
-  elif endorse_type == AVAL_30000:
-    amount = 30000
-  else:
-    raise Exception('invalid_endorse')  
-
+  amount = t.amount
+  
   accounts_to_issue = {
     t.from_name  : amount,
   }
 
   # HACK : poner las privadas en orden y los owner de los assets
-  multisig_set_overdraft(accounts_to_issue)
+#   multisig_set_overdraft(accounts_to_issue)
+  print "apply auth => about to apply overdraft"
+  set_overdraft(accounts_to_issue)
 
 def user_transfer_authorizations(t):
   
@@ -144,8 +141,8 @@ def do_process():
 
         try:        
           # Operaciones de avales
-          if t.amount_asset in ALL_AVAL_TYPES and t.to_id == PROPUESTA_PAR_ID:
-
+#           if t.amount_asset in ALL_AVAL_TYPES and t.to_id == DISCOIN_ADMIN_ID:
+          if t.amount_asset == DISCOIN_ACCESS_ID and t.to_id == DISCOIN_ADMIN_ID:
             print '------'
             print t.id
             print t.memo
@@ -153,18 +150,19 @@ def do_process():
             txid = None
             # usuario1 transfiere a gobierno AVAL(i) con memo '~ie:nombre'
             # accion => autorizar a usuario (a.b.c)
-            if t.memo and t.memo[:8] == '~ie:'.encode('hex'):
-              txid = user_authorize_user(t)
-            
+#             if t.memo and t.memo[:8] == '~ie:'.encode('hex'):
+#               txid = user_authorize_user(t)
+              
             # usuario2 transfiere a gobierno AVAL(i) con memo '~ae'
             # accion => usuario2 quiere credito
-            elif t.memo and t.memo == '~ae'.encode('hex'):
+            #el
+            if t.memo and t.memo == '~ae'.encode('hex'):
               txid = user_applies_authorization(t)
             
             # usuario3 transfiere a gobierno AVAL(i) con memo '~et:nombre'
             # accion => usuario3 transfiere avales a usuario a.b.c
-            elif t.memo and t.memo[:8] == '~et:'.encode('hex'):
-              txid = user_transfer_authorizations(t)
+#             elif t.memo and t.memo[:8] == '~et:'.encode('hex'):
+#               txid = user_transfer_authorizations(t)
 
             t.processed = 1
   
