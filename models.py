@@ -12,7 +12,7 @@ from sqlalchemy import BigInteger, Integer, String, DateTime, Enum, Boolean, Dat
 from sqlalchemy.types import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, exists
 from sqlalchemy.pool import NullPool
 
 from utils import *
@@ -207,13 +207,80 @@ class Business(Base, TimestampMixin):
   longitude         = Column(Numeric(11,8), index=True)
   address           = Column(String(256))
   
+  email             = Column(String(256), index=True)
+  telephone         = Column(String(256), index=True)
+  
   category = relationship('Category', foreign_keys=category_id)
   subcategory = relationship('Category', foreign_keys=subcategory_id)
   discount_schedule = relationship("DiscountSchedule", back_populates="business")
   
 #   billing_address_id = Column(Integer, ForeignKey("address.id"))
 #   billing_address = relationship("Address", foreign_keys=[billing_address_id])
+  
+  def validate_dict(self, dict, db):
+    errors = []
+    if not dict['name']  or str(dict['name']).strip() == '':
+      errors.append({'field':'name', 'error':'is_empty'})
     
+#     dict['description']
+    cat = try_int(dict['category_id'])
+    if cat==0 or not db.query(exists().where((Category.id == cat) & (Category.parent_id==None) ) ).scalar():
+      errors.append({'field':'category_id', 'error':'is_empty_or_not_exists_or_is_not_root_category'})
+    subcat = try_int(dict['subcategory_id'])
+    if subcat==0 or not db.query(exists().where((Category.id == subcat) & (Category.parent_id==cat) ) ).scalar():
+      errors.append({'field':'sub_category_id', 'error':'is_empty_or_not_exists_or_is_not_subcategory_of_given_root'})
+#     dict['image']
+    lat = str(dict['latitude'])
+    lon = str(dict['longitude'])
+    print ' =============================================================== '
+    print ' ===================== Business::validate_dict()'
+    print lat
+    print lon
+    print ' =============================================================== '
+    import re
+    lat_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?[0-8]\d((\.)|\.\d{1,6})?)|(0*?90((\.)|\.0{1,6})?))$")
+    lon_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?\d\d((\.)|\.\d{1,6})?)|(0*?1[0-7]\d((\.)|\.\d{1,6})?)|(0*?180((\.)|\.0{1,6})?))$")
+#     pattern = re.compile("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$")
+    if not lat or not is_number(lat) or not lat_patt.match(lat):
+      errors.append({'field':'latitude', 'error':'is_empty_or_not_valid'})
+    if not lon or not is_number(lon) or not lon_patt.match(lon):
+      errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
+    
+#     dict['location']
+#     dict['latitude']
+#     dict['longitude']
+#     dict['address']
+#     dict['discount_schedule'] -> validated on DiscountSchedule model
+
+    return errors
+  
+  def from_dict_for_update(self, dict):
+    self.name               = dict['name']
+    self.description        = dict['description']
+    self.category_id        = int(dict['category_id'])
+    self.subcategory_id     = int(dict['subcategory_id'])
+    self.image              = dict['image']
+    self.location           = dict['location']
+    self.latitude           = Decimal(dict['latitude'])
+    self.longitude          = Decimal(dict['longitude'])
+    self.address            = dict['address']
+#     self.discount_schedule  = dict['discount_schedule']
+    
+  def to_dict_for_update(self):
+    return {
+        'name'              : self.name,
+        'description'       : self.description,
+        'category_id'       : self.category_id,
+        'subcategory_id'    : self.subcategory_id,
+        'image'             : self.image,
+        'location'          : self.location,
+        'latitude'          : self.latitude,
+        'longitude'         : self.longitude,
+        'address'           : self.address,
+        'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else [],
+        # 'discount' : self.discount
+  }
+  
   def to_dict(self, get_balances=False):
     if get_balances:
       p = rpc.db_get_account_balances(self.account_id, [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID])
@@ -243,22 +310,22 @@ class Business(Base, TimestampMixin):
     }
   
   def from_dict(self, dict):
-    self.name = dict['name']
-    self.description  = dict['description']
-    self.account  = dict['account']
-    self.account_id = dict['account_id']
-    self.category_id  = dict['category_id']
-    self.subcategory_id = dict['subcategory_id']
-    self.balance  = dict['balance']
-    self.total_refunded = dict['total_refunded']
-    self.total_discounted = dict['total_discounted']
-    self.initial_credit = dict['initial_credit']
-    self.discount = dict['discount']
-    self.image  = dict['image']
-    self.location = dict['location']
-    self.latitude = dict['latitude']
-    self.longitude  = dict['longitude']
-    self.address  = dict['address']
+    self.name             = dict['name']
+    self.description      = dict['description']
+    self.account          = dict['account']
+    self.account_id       = dict['account_id']
+    self.category_id      = int(dict['category_id'])
+    self.subcategory_id   = int(dict['subcategory_id'])
+#     self.balance          = dict['balance']
+#     self.total_refunded   = dict['total_refunded']
+#     self.total_discounted = dict['total_discounted']
+#     self.initial_credit   = Decimal(dict['initial_credit'])
+    self.discount         = Decimal(dict['discount'])
+    self.image            = dict['image']
+    self.location         = dict['location']
+    self.latitude         = Decimal(dict['latitude'])
+    self.longitude        = Decimal(dict['longitude'])
+    self.address          = dict['address']
     
   
 class DiscountSchedule(Base, TimestampMixin):
@@ -270,7 +337,21 @@ class DiscountSchedule(Base, TimestampMixin):
   discount          = Column(Numeric(5,2), index=True)
   
   business          = relationship("Business", back_populates="discount_schedule")
+  
+  valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+  
+  # ToDo: obtener min_discount de configuracion 
+  min_discount      = Decimal(20)
+  def from_dict(self, business_id, dict):
     
+    self.business_id  = business_id
+    self.date         = dict['date']
+    self.discount     = dict['discount']
+    if dict['date'] not in DiscountSchedule.valid_dates:
+      raise Exception (u"Not a valid date '{0}'".format(dict['date']))
+    if not is_number(dict['discount']) or Decimal(dict['discount'])<DiscountSchedule.min_discount:
+      raise Exception (u"Not a valid discount '{0}'. Min discount:{1}".format(dict['date']), DiscountSchedule.min_discount)
+      
   def to_dict(self):
     return {
       'id' : self.id,

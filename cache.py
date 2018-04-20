@@ -38,8 +38,9 @@ def get_account_id(account_name):
   if not account_id:
     tmp = rpc.db_get_account_by_name(account_name)
     print 'MIRALO VIEN TMP => ', tmp
-    account_id = tmp['id']
-    mc.set(key, account_id)
+    if tmp:
+      account_id = tmp['id']
+      mc.set(key, account_id)
   return account_id
 
 def get_asset(asset_id):

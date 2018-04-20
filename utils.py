@@ -12,6 +12,7 @@ REGISTER_PRIVKEY  = os.environ.get('REGISTER_PRIVKEY', '5JQGCnJCDyraociQmhDRDxzN
 LOCKSMITH_PRIVKEY = os.environ.get('LOCKSMITH_PRIVKEY', '5JMkKXKcLbbrH4ypQ1Z2pP2qKtL9r3nsLycht6UsDxYu9KoKMD9')
 
 DISCOIN_ADMIN_ID     = '1.2.18'     # discoin.admin
+DISCOIN_ADMIN_NAME   = 'discoin.admin'
 # DISCOIN_LOCKSMITH_ID = '1.2.24'   # discoin.locksmith 
 DISCOIN_LOCKSMITH_ID = '1.2.17'     # nathan
 DISCOIN_HANDLER_ID   = '1.2.23'     # discoin.handler
@@ -84,6 +85,13 @@ def filter_upper(chain):
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
 
+def is_number(s):
+  try:
+      float(s)
+      return True
+  except ValueError:
+      return False
+      
 def try_int(value, default=0):
   try:
     return int(value)
