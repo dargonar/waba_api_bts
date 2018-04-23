@@ -38,6 +38,18 @@ ERR_UNKNWON_ERROR    = 'unknown_error'
 
 REGISTER_PRIVKEY = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 
+wifs = { 
+          'discoin.biz1' : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
+          '1.2.21'       : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
+          'discoin.biz2' : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
+          '1.2.22'       : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
+          'discoin.biz3' : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9',
+          '1.2.25'       : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9',
+          'discoin.biz4' : '5JqmMaoHucyZPNQjBdwyVPd5vmvECD57cbZU4zNY9KMcFULDUrH',
+          '1.2.26'       : '5JqmMaoHucyZPNQjBdwyVPd5vmvECD57cbZU4zNY9KMcFULDUrH'
+       }
+
+
 def create_app(**kwargs):
   app = Flask(__name__)
   app.debug = True
@@ -208,10 +220,27 @@ if __name__ == '__main__':
     
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
     with session_scope() as db:
-#       return jsonify( { 'businesses': [ x.to_dict(str2bool(with_balance)) for x in db.query(Business).all()] } );
-      return jsonify( { 'businesses': [ x.to_dict(str2bool(with_balance)) for x in db.query(Business).all()] } );
-    
+      return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).all()] } );
   
+  def build_business(biz):
+    business = biz.to_dict()
+    business['balances'] = get_business_balances(biz.account_id)
+    return business
+  
+  def get_business_balances(account_id):
+    assets = [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID]
+    p = rpc.db_get_account_balances(account_id, assets)
+    the_assets = {}
+    for x in assets:
+      the_assets[x] = cache.get_asset(x)
+    x = {
+      'balance'         : next(( amount_value(x['amount'], the_assets[x['asset_id']]) for x in p if x['asset_id'] == DISCOIN_ID), None), 
+      'initial_credit'  : next(( amount_value(x['amount'], the_assets[x['asset_id']]) for x in p if x['asset_id'] == DISCOIN_CREDIT_ID), None), 
+      'ready_to_access' : next(( amount_value(x['amount'], the_assets[x['asset_id']]) for x in p if x['asset_id'] == DISCOIN_ACCESS_ID), None)
+    }
+    print '================================== get_business_balances #3'
+    return x
+    
   @app.route('/api/v3/dashboard/business/profile/<account_id>/load', methods=['GET'])
   def dashboard_business_profile(account_id):
     with_balance = "1" 
@@ -274,7 +303,204 @@ if __name__ == '__main__':
 #     business_name   = request.json.get('business_name')  
 #     initial_credit  = request.json.get('initial_credit')    
 #     business_id     = cache.get_account_id(business_name)
+  
+  # =================================================================================================
+  # =================================================================================================
+  # =================================================================================================
+  # =================================================================================================
+  # =================================================================================================
+  # =================================================================================================
+  # Subaccount Management
+  # =================================================================================================
+  
+  @app.route('/api/v3/dashboard/business/<account_id>/subaccount/list/<start>', methods=['GET', 'POST'])
+  def dashboard_business_account_list(account_id, start):
+    print ' == get_withdraw_permissions_by_giver:'
+    res = rpc.db_get_withdraw_permissions_by_giver(account_id, start, 100)
+    print json.dumps(res, indent=2)
+#     res = rpc.db_get_withdraw_permissions_by_recipient(business_id, '1.12.0', 100)
     
+    return jsonify( {'subaccounts':res} )
+
+  
+  @app.route('/api/v3/business/subaccount/add_or_update/create', methods=['POST'])
+  def subaccount_add_or_update_create():
+    
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.27", "limit" : "2000", "_from" : null, "period" : null, "periods" : 365}' http://35.163.59.126:8080/api/v3/business/subaccount/add_or_update/create    business_id     = request.json.get('business_id')  
+    subaccount_id   = request.json.get('subaccount_id')  
+    limit           = request.json.get('limit')
+    _from           = request.json.get('from')
+    period          = request.json.get('period')
+    periods         = request.json.get('periods')
+
+    tx = subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods)
+    
+    return jsonify( {'tx':tx} )
+  
+  def subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods):
+    
+    # Check if business has credit.
+    p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
+    if p[0]['amount'] <= 0:
+      return jsonify({'error':'account_has_no_credit'})
+    print ' ======================================================'
+    print ' ====== subaccount_add_or_update_create_impl #1'
+    # Check if subaccount is valid account.
+    subaccounts = rpc.db_get_accounts([subaccount_id])
+    print ' ======================================================'
+    print ' ====== subaccount_add_or_update_create_impl #2'
+    # rpc.db_get_accounts(['1.2.18'])
+    if not subaccounts or len(subaccounts)==0:
+      return jsonify( {'error': 'subaccount_not_exists'} )
+          
+    print ' ======================================================'
+    print ' ====== subaccount_add_or_update_create_impl #3'
+    asset, asset_core = rpc.db_get_assets([DISCOIN_ID, CORE_ASSET])
+    
+    # ~ie:<%y%m%d>:<1.2.1526>:25000
+    if not _from:
+#       _from = datetime.utcnow().strftime('%y%m%d')
+      _from = (datetime.utcnow()+timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S')
+#       _from = '2018-04-24T00:00:00'
+    if not period:
+      period = 86400 # 1 day in seconds
+    if not periods:
+      periods = 365 # 365 periods = 1 year
+    
+    print ' ======================================================'
+    print ' ====== subaccount_add_or_update_create_impl #4'
+    my_amount = reverse_amount_value(limit, asset)
+    my_amount_asset = {
+      'amount'  : int(my_amount),
+      'asset'   : DISCOIN_ID
+    }
+    withdraw_permission_op = withdraw_permission_create(business_id, subaccount_id, my_amount_asset, period, periods, _from, None, CORE_ASSET)
+    
+    print ' == withdraw_permission_op: '
+    print withdraw_permission_op
+    
+    fees = rpc.db_get_required_fees([withdraw_permission_op[0]] , CORE_ASSET)
+    
+    print ' == fees: '
+    print fees
+    
+    _transfer = transfer(
+        DISCOIN_ADMIN_ID,
+        business_id,
+        asset_core,
+        amount_value(fees[0]['amount'], asset_core)
+      )
+    print ' == transfer: '
+    print _transfer
+    
+    print ' ======================================================'
+    print ' ====== subaccount_add_or_update_create_impl #5'
+    
+#     _transfer +
+    tx = build_tx_and_broadcast(
+      _transfer + [withdraw_permission_op[0]] 
+    , None)
+    
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+    
+    tx['signatures'] = [signature]
+    return tx
+
+  @app.route('/api/v3/business/subaccount/add_or_update/create/broadcast', methods=['POST'])
+  def subaccount_add_or_update_create_and_broadcast():
+    
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.27", "limit" : "2000", "_from" : null, "period" : null, "periods" : 365}' http://35.163.59.126:8080/api/v3/business/subaccount/add_or_update/create/broadcast
+    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.28", "limit" : "2000", "_from" : null, "period" : null, "periods" : 365}' http://35.163.59.126:8080/api/v3/business/subaccount/add_or_update/create/broadcast
+      
+    business_id     = request.json.get('business_id')  
+    subaccount_id   = request.json.get('subaccount_id')  
+    limit           = request.json.get('limit')
+    _from           = request.json.get('from')
+    period          = request.json.get('period')
+    periods         = request.json.get('periods')
+    
+    # ToDo:
+    # Si ya tiene permiso, hay que tirar el update:
+#     [
+#       26,{
+#         "fee": {
+#           "amount": 0,
+#           "asset_id": "1.3.0"
+#         },
+#         "withdraw_from_account": "1.2.0",
+#         "authorized_account": "1.2.0",
+#         "permission_to_update": "1.12.0",
+#         "withdrawal_limit": {
+#           "amount": 0,
+#           "asset_id": "1.3.0"
+#         },
+#         "withdrawal_period_sec": 0,
+#         "period_start_time": "1970-01-01T00:00:00",
+#         "periods_until_expiration": 0
+#       }
+#     ]
+
+    tx = subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods)
+    
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    
+    signature = bts2helper_sign_compact(to_sign, wifs[business_id])
+    
+    if not tx['signatures']: tx['signatures'] = []
+    tx['signatures'].append(signature);    
+    
+    # como listamos los permisos? -> get_account_history_by_operations discoin.biz3 [25] 0 100 ??
+    # como testeamos el permiso?  -> transfer discoin.biz4.subaccount1 discoin.biz4.subaccount2 10000 THEDISCOIN.M "ehhh" true
+
+    res = rpc.network_broadcast_transaction_sync(tx)
+    print json.dumps(res, indent=2)
+    return jsonify( {'res':res} )
+  
+  # ToDo:  
+  # withdraw_permission_claim_operation
+  #     [
+  #       27,{
+  #         "fee": {
+  #           "amount": 0,
+  #           "asset_id": "1.3.0"
+  #         },
+  #         "withdraw_permission": "1.12.0",
+  #         "withdraw_from_account": "1.2.0",
+  #         "withdraw_to_account": "1.2.0",
+  #         "amount_to_withdraw": {
+  #           "amount": 0,
+  #           "asset_id": "1.3.0"
+  #         }
+  #       }
+  #     ]
+  
+#   def multisig_change_keys(account, owner, active, memo_key):
+#     init([account])
+
+#     active_auth = {
+#       'weight_threshold' : 1,
+#       'account_auths'    : [],
+#       'key_auths'        : [[active,1]], 
+#       'address_auths'    : []
+#     }
+
+#     owner_auth = {
+#       'weight_threshold' : 1,
+#       'account_auths'    : [[account_id('discoin.admin'),1]],
+#       'key_auths'        : [[owner,1]], 
+#       'address_auths'    : []
+#     }
+
+#     ops = account_update(
+#       account_id(account), 
+#       owner_auth, 
+#       active_auth, 
+#       {'memo_key':memo_key},
+#       [wifs['discoin.admin']],
+#       assets['DISCOIN']['id']
+#     )
+
   @app.route('/api/v3/business/endorse/create', methods=['POST'])
   def endorse_create():
     # TEST: curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz1","initial_credit":"10000"}' http://35.163.59.126:8080/api/v3/business/endorse/create
@@ -330,6 +556,8 @@ if __name__ == '__main__':
     print ' ====== XX endorse_create_impl #5'
     # transfer_op(_from, _to, amount, memo=None, fee=None)
     # get_prototype_operation transfer_operation
+    # get_prototype_operation withdraw_permission_update_operation
+    # get_prototype_operation withdraw_permission_claim_operation
 #     endorse_transfer_op = transfer_op()
     endorse_transfer_op = transfer(DISCOIN_ADMIN_ID, business_id, asset, initial_credit, memo, None, CORE_ASSET)
     # def transfer(from_id, to_id, asset, amount, memo=None, wif=None, pay_in=CORE_ASSET):
@@ -358,7 +586,7 @@ if __name__ == '__main__':
     print ' ======================================================'
     
     return tx
-
+  
   @app.route('/api/v3/business/endorse/create/broadcast', methods=['POST'])
   def endorse_create_and_broadcast():
     # TEST: curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz3","initial_credit":"12500"}' http://35.163.59.126:8080/api/v3/business/endorse/create/broadcast
@@ -464,9 +692,6 @@ if __name__ == '__main__':
     business_name   = request.json.get('business_name')  
     initial_credit  = request.json.get('initial_credit')
     
-    wifs = { 'discoin.biz1' : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
-             'discoin.biz2' : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
-             'discoin.biz3' : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9'}
 #     op_id           = request.json.get('op_id')
     print ' ======================================================'
     print ' ====== endorse_apply_and_broadcast #1'

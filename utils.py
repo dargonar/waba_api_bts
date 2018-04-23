@@ -65,6 +65,10 @@ def amount_value(amount, asset):
   d = Decimal(amount)/Decimal(10**asset['precision'])
   return str(d)
 
+def reverse_amount_value(amount, asset):
+  d = Decimal(amount)*Decimal(10**asset['precision'])
+  return str(d)
+
 def round_decimal(value):
   if not value:
     return Decimal('0')

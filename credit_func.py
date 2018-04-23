@@ -290,7 +290,7 @@ def multisig_change_keys(account, owner, active, memo_key):
   
   owner_auth = {
     'weight_threshold' : 1,
-    'account_auths'    : [[account_id('gobierno-par'),1]],
+    'account_auths'    : [[account_id('discoin.admin'),1]],
     'key_auths'        : [[owner,1]], 
     'address_auths'    : []
   }
@@ -300,9 +300,11 @@ def multisig_change_keys(account, owner, active, memo_key):
     owner_auth, 
     active_auth, 
     {'memo_key':memo_key},
-    [wifs['marcio'], wifs['beto']],
-    assets['MONEDAPAR']['id']
+    [wifs['discoin.admin']]
   )
+  
+#   ,
+#     assets['DISCOIN']['id']
 
   #[wifs['marcio'], wifs['beto']]
   #set_fees_and_broadcast(ops, None, CORE_ASSET)
@@ -514,11 +516,17 @@ if __name__ == '__main__':
   #  "BTS6ajNfJEZwwm3g83zYy86kGGwcaBhnBdsHMTcDHHZ7AAKyjjLTH"
   #)
 
+#   y = multisig_change_keys(
+#     "moneda-par.andrea",
+#     "BTS8YFwSiJvn1r4oenmft9Hkvy9Rp8s1mzYczXVKtz3McGAmJa6Bm",
+#     "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
+#     "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
+#   )
   y = multisig_change_keys(
-    "moneda-par.andrea",
-    "BTS8YFwSiJvn1r4oenmft9Hkvy9Rp8s1mzYczXVKtz3McGAmJa6Bm",
-    "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
-    "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
+    "discoin.biz4",
+    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
+    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
+    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2"
   )
 
   #accounts_to_issue = {

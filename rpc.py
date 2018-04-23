@@ -134,7 +134,12 @@ def db_lookup_accounts(lower_bound_name, limit):
   return call_rpc('db', 'lookup_accounts', lower_bound_name, limit)  
 
 def db_lookup_account_names(names):
-  return call_rpc('db', 'lookup_account_names', names)  
+  return call_rpc('db', 'lookup_account_names', names)
+
+def db_get_withdraw_permissions_by_recipient(account, start, limit=100):
+  return call_rpc('db', 'get_withdraw_permissions_by_recipient', account, start, limit)
+def db_get_withdraw_permissions_by_giver(account, start, limit=100):
+  return call_rpc('db', 'get_withdraw_permissions_by_giver', account, start, limit)
 
 def network_broadcast_transaction(tx):
   return call_rpc('network', 'broadcast_transaction', tx)

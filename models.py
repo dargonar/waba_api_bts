@@ -281,9 +281,7 @@ class Business(Base, TimestampMixin):
         # 'discount' : self.discount
   }
   
-  def to_dict(self, get_balances=False):
-    if get_balances:
-      p = rpc.db_get_account_balances(self.account_id, [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID])
+  def to_dict(self):
     return {
         'id'              : self.id,
         'name'            : self.name,
@@ -294,7 +292,8 @@ class Business(Base, TimestampMixin):
         'subcategory_id'  : self.subcategory_id,
         'balance'         : self.balance,
         'initial_credit'  : self.initial_credit,
-        'balances'        : p if get_balances else {},
+        'balances'        : None,
+        #p if get_balances else {},
         'total_refunded'  : self.total_refunded,
         'total_discounted': self.total_discounted,
         

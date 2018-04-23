@@ -48,7 +48,9 @@ def withdraw_permission_create_op(withdraw_from_account, authorized_account, wit
       'periods_until_expiration' : periods_until_expiration,
       'period_start_time'        : period_start_time
   }]
-
+#   'from'   : withdraw_from_account,
+#   'to'     : authorized_account
+  
   if fee: tmp[1]['fee'] = fee
   return tmp
 
