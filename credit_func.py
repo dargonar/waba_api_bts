@@ -49,11 +49,11 @@ def ops_for_remove(account_name, amount):
     account_id(account_name),
     account_id('discoin.admin'),
     assets[DISCOIN_SYMBOL],
-    amount
+    reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
   ) + asset_reserve(
     account_id('discoin.admin'), 
     assets[DISCOIN_SYMBOL], 
-    amount
+    reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
   ) + override_transfer( 
     account_id('discoin.admin'),
     account_id(account_name),
@@ -85,7 +85,7 @@ def ops_for_issue(account_name, amount):
     account_id('discoin.admin'),
     account_id(account_name),
     assets[DISCOIN_SYMBOL],
-    amount
+    reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
   ) + asset_issue( 
     account_id('discoin.admin'),
     account_id(account_name),

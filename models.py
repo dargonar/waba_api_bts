@@ -246,6 +246,8 @@ class Business(Base, TimestampMixin):
     if not lon or not is_number(lon) or not lon_patt.match(lon):
       errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
     
+    # ToDo:
+    # Validate telephone, email and address
 #     dict['location']
 #     dict['latitude']
 #     dict['longitude']
@@ -264,6 +266,8 @@ class Business(Base, TimestampMixin):
     self.latitude           = Decimal(dict['latitude'])
     self.longitude          = Decimal(dict['longitude'])
     self.address            = dict['address']
+    self.email              = dict['email']
+    self.telephone          = dict['telephone']
 #     self.discount_schedule  = dict['discount_schedule']
     
   def to_dict_for_update(self):
@@ -278,6 +282,8 @@ class Business(Base, TimestampMixin):
         'longitude'         : self.longitude,
         'address'           : self.address,
         'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else [],
+        'telephone'         : self.telephone,
+        'email'             : self.email
         # 'discount' : self.discount
   }
   
@@ -290,21 +296,22 @@ class Business(Base, TimestampMixin):
         'account_id'      : self.account_id,
         'category_id'     : self.category_id,
         'subcategory_id'  : self.subcategory_id,
-        'balance'         : self.balance,
-        'initial_credit'  : self.initial_credit,
-        'balances'        : None,
-        #p if get_balances else {},
+#         'balance'         : self.balance,
+#         'initial_credit'  : self.initial_credit,
+#         'balances'        : None,
         'total_refunded'  : self.total_refunded,
         'total_discounted': self.total_discounted,
         
-        'discount' : self.discount,
-        'image' : self.image,
-        'location' : self.location,
-        'latitude' : self.latitude,
-        'longitude' : self.longitude,
-        'address' : self.address,
-        'category' : self.category.to_dict() if self.category else None,
-        'subcategory' : self.subcategory.to_dict() if self.subcategory else None,
+        'telephone'       : self.telephone,
+        'email'           : self.email,
+        'discount'        : self.discount,
+        'image'           : self.image,
+        'location'        : self.location,
+        'latitude'        : self.latitude,
+        'longitude'       : self.longitude,
+        'address'         : self.address,
+        'category'        : self.category.to_dict() if self.category else None,
+        'subcategory'     : self.subcategory.to_dict() if self.subcategory else None,
         'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else []
     }
   
@@ -325,6 +332,8 @@ class Business(Base, TimestampMixin):
     self.latitude         = Decimal(dict['latitude'])
     self.longitude        = Decimal(dict['longitude'])
     self.address          = dict['address']
+    self.email            = dict['email']
+    self.telephone        = dict['telephone']
     
   
 class DiscountSchedule(Base, TimestampMixin):

@@ -113,3 +113,15 @@ def account_whitelist(authorizing_account_id, account_id_to_list, new_listing, w
 def withdraw_permission_create(withdraw_from_account_id, authorized_account_id, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, wif=None, pay_in=CORE_ASSET):
   wpc_op = withdraw_permission_create_op(withdraw_from_account_id, authorized_account_id, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time)
   return set_fees_and_broadcast([wpc_op], wif, pay_in)
+
+def withdraw_permission_claim(withdraw_permission, withdraw_from_account, withdraw_to_account, amount_to_withdraw, wif=None, pay_in=CORE_ASSET):
+  wpc_op = withdraw_permission_claim_op(withdraw_permission, withdraw_from_account, withdraw_to_account, amount_to_withdraw)
+  return set_fees_and_broadcast([wpc_op], wif, pay_in)
+
+def withdraw_permission_update(withdraw_from_account, authorized_account, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, permission_to_update, wif=None, pay_in=CORE_ASSET):
+  wpu_op = withdraw_permission_update_op(withdraw_from_account, authorized_account, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, permission_to_update)
+  return set_fees_and_broadcast([wpu_op], wif, pay_in)
+
+def withdraw_permission_delete(withdraw_from_account, authorized_account, withdrawal_permission, wif=None, pay_in=CORE_ASSET):
+  wpd_op = withdraw_permission_delete_op(withdraw_from_account, authorized_account, withdrawal_permission)
+  return set_fees_and_broadcast([wpd_op], wif, pay_in)

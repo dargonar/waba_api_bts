@@ -8,6 +8,7 @@ def calc_expiration(now, seconds):
 
 def format_date(date):
   return date.strftime('%Y%m%dT%H%M%S')
+  #return date.strftime('%Y-%m-%dT%H:%M:%S')
 
 def build_tx(ops, ref_block_num, ref_block_prefix, expiration=120):
   return  {
@@ -48,8 +49,43 @@ def withdraw_permission_create_op(withdraw_from_account, authorized_account, wit
       'periods_until_expiration' : periods_until_expiration,
       'period_start_time'        : period_start_time
   }]
-#   'from'   : withdraw_from_account,
-#   'to'     : authorized_account
+  
+  if fee: tmp[1]['fee'] = fee
+  return tmp
+
+def withdraw_permission_update_op(withdraw_from_account, authorized_account, withdrawal_limit, withdrawal_period_sec, periods_until_expiration, period_start_time, permission_to_update, fee=None):
+  tmp = [26, {
+      'withdraw_from_account'    : withdraw_from_account,
+      'authorized_account'       : authorized_account,
+      'withdrawal_limit'         : withdrawal_limit,
+      'withdrawal_period_sec'    : withdrawal_period_sec,
+      'periods_until_expiration' : periods_until_expiration,
+      'period_start_time'        : period_start_time,
+      'permission_to_update'     : permission_to_update
+  }]
+  
+  if fee: tmp[1]['fee'] = fee
+  return tmp
+
+def withdraw_permission_delete_op(withdraw_from_account, authorized_account, withdrawal_permission, fee=None):
+  tmp = [28, {
+      'withdraw_from_account' : withdraw_from_account,
+      'authorized_account'    : authorized_account,
+      'withdrawal_permission' : withdrawal_permission
+  }]
+  
+  if fee: tmp[1]['fee'] = fee
+  return tmp
+
+def withdraw_permission_claim_op(withdraw_permission, withdraw_from_account, withdraw_to_account, amount_to_withdraw, fee=None):
+  tmp = [
+    27,{
+      "withdraw_permission": withdraw_permission,
+      "withdraw_from_account": withdraw_from_account,
+      "withdraw_to_account": withdraw_to_account,
+      "amount_to_withdraw": amount_to_withdraw
+    }
+  ]
   
   if fee: tmp[1]['fee'] = fee
   return tmp
