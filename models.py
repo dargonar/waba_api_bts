@@ -348,6 +348,20 @@ class DiscountSchedule(Base, TimestampMixin):
   
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   
+  @staticmethod
+  def validate_schedule(schedule_array, min_discount):
+    import copy
+    errors          = []
+    my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
+    for schedule in schedule_array:
+      if schedule['date'] in my_valid_dates:
+        my_valid_dates.remove(schedule['date'])
+      if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
+        errors.append({'field':'discount_schedule', 'error': '{0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
+    if len(my_valid_dates)>0:
+      errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
+    
+    return errors 
   # ToDo: obtener min_discount de configuracion 
   min_discount      = Decimal(20)
   def from_dict(self, business_id, dict):

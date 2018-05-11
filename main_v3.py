@@ -101,6 +101,8 @@ if __name__ == '__main__':
   
   @app.errorhandler(Exception)
   def unhandled_exception(e):
+    print 'ERROR OCCURRED:'
+    print str(e)
     return make_response(jsonify({'error': str(e)}), 500)
   
   @app.route('/api/v3/dashboard/kpis', methods=['POST', 'GET'])
@@ -252,8 +254,10 @@ if __name__ == '__main__':
       return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).all()] } );
   
   def build_business(biz):
-    business = biz.to_dict()
-    business['balances'] = get_business_balances(biz.account_id)
+    business                              = biz.to_dict()
+    business['balances']                  = get_business_balances(biz.account_id)
+    business['rating']                    = get_business_rate(biz.account_id)
+    business['avg_discount_by_category']  = get_avg_discount_by_category(biz.category_id, biz.subcategory_id)
     return business
   
   def get_business_balances(account_id):
@@ -269,11 +273,35 @@ if __name__ == '__main__':
     }
     print '================================== get_business_balances #3'
     return x
-    
+  
+  def get_business_rate(account_id):
+    # ToDo: calculate rates (tenerlo en BBDD) -> Hacer sistema de rating
+    return {
+      'rating'  : 0,
+      'reviews' : {
+        'total'   : 0,
+        'rate_1'  : 0,
+        'rate_2'  : 0,
+        'rate_3'  : 0,
+        'rate_4'  : 0,
+        'rate_5'  : 0
+      }
+    }
+  def get_avg_discount_by_category(cat, subcat):
+    # ToDo: calculate avg (tenerlo en BBDD)
+    return { 'category': 
+              {'category' : cat, 
+               'avg_discount' : 25},
+            'subcategory': 
+              {'subcategory' : subcat, 
+               'avg_discount' : 32}
+           }
+  
   @app.route('/api/v3/dashboard/business/profile/<account_id>/load', methods=['GET'])
   def dashboard_business_profile(account_id):
     with session_scope() as db:
-      return jsonify( { 'business': build_business( db.query(Business).filter(Business.account_id==account_id).first() ) } )
+      biz = db.query(Business).filter(Business.account_id==account_id).first()
+      return jsonify( { 'business': build_business( biz ) } )
 #       return jsonify( { 'business': [ build_business(x) for x in db.query(Business).all()] } );
   
   
@@ -321,6 +349,46 @@ if __name__ == '__main__':
 #       return jsonify({'tx' : tx})
     return jsonify({'ok':'ok'})
 
+  @app.route('/api/v3/dashboard/business/schedule/<account_id>/update', methods=['GET', 'POST'])
+  def dashboard_update_business_schedule(account_id):
+    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": null,    "location": null,    "longitude": null,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
+    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": -22.36,    "location": null,    "longitude": -33.36,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
+    secret_text = 'secrettext_'
+    if request.method=='GET':
+      the_secret_text = secret_text + account_id
+      with session_scope() as db:
+        biz = db.query(Business).filter(Business.account_id==account_id).first()
+        if not biz:
+          return jsonify( { 'error' : 'account_id_not_found'} )
+        return jsonify( { 'discount_schedule' : [x.to_dict() for x in biz.discount_schedule] if biz.discount_schedule else [] , 'secret' : the_secret_text } );
+          
+    biz_schedule_json  = request.json.get('discount_schedule', [])
+    signed_secret      = request.json.get('signed_secret')
+    
+    # ToDo: obtener minimo descuento de categoria y pasarlo como parametro
+    errors = DiscountSchedule.validate_schedule(biz_schedule_json, 20)
+    if len(errors)>0:
+      return jsonify(errors)
+    with session_scope() as db:
+      biz = db.query(Business).filter(Business.account_id==account_id).first()
+      if not biz:
+        return jsonify( { 'error' : 'account_id_not_found'} )
+      biz.discount_schedule[:] = []
+      db.add(biz)
+      for schedule in biz_schedule_json:
+        dis_sche = DiscountSchedule()
+        try:
+          dis_sche.from_dict(biz.id, schedule)
+        except Exception as e:
+          errors.append({'field':'discount_schedule', 'error':str(e)})
+        db.add(dis_sche)
+      if len(errors)>0:
+        db.rollback()
+        return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
+      db.commit()
+
+#       return jsonify({'tx' : tx})
+    return jsonify({'ok':'ok'})
 #     except Exception as e:
 #       logging.error(traceback.format_exc())
 #       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
@@ -339,6 +407,40 @@ if __name__ == '__main__':
   # =================================================================================================
   # Subaccount Management
   # =================================================================================================
+  
+  # Login
+  @app.route('/api/v3/business/login/', methods=['GET', 'POST'])
+  def business_login():
+    
+    from bitsharesbase.account import BrainKey, Address, PublicKey, PrivateKey
+    from bitsharesbase.memo import (
+      get_shared_secret,
+      _pad,
+      _unpad,
+      encode_memo,
+      decode_memo
+    )
+    
+    pubKey        = rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['options']['memo_key']
+    memo_from     = request.json.get('from')
+    memo_to       = request.json.get('to')
+    memo_nonce    = 0
+    memo_message  = request.json.get('message')
+    print pubKey
+    print memo_from
+    print memo_to
+    print memo_nonce
+    print memo_message
+    
+    dec = decode_memo(PrivateKey(REGISTER_PRIVKEY),
+                      PublicKey(memo_from, prefix="BTS"),
+                              0,
+                              memo_message)
+
+    #msg   = bts2helper_memo_encode(REGISTER_PRIVKEY, str(memo_from), str('123456789').encode('hex'))
+    #msg   = bts2helper_memo_decode(REGISTER_PRIVKEY, pubKey, memo_from, memo_to, memo_nonce, memo_message)
+    
+    return jsonify( { 'res' : dec } )
   
   # Lista las subcuentas de un business.
   @app.route('/api/v3/business/<business_id>/subaccount/list/<start>', methods=['GET', 'POST'])
@@ -628,31 +730,39 @@ if __name__ == '__main__':
     return jsonify( {'res':res, 'tx':tx} )
   
     
-#   def multisig_change_keys(account, owner, active, memo_key):
-#     init([account])
+  @app.route('/api/v3/account/change_keys/<account>/<owner>/<active>/<memo_key>', methods=['GET'])
+  def change_keys(account, owner, active, memo_key):
+    from credit_func import account_id
+    
+    accounts = { a[0]:a[1] for a in rpc.db_get_full_accounts(list(set(account)), False) }
+    assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+[DISCOIN_ID]) }
+    assets_by_id = { assets[k]['id']:assets[k] for k in assets }
+    
+    active_auth = {
+      'weight_threshold' : 1,
+      'account_auths'    : [],
+      'key_auths'        : [[active,1]], 
+      'address_auths'    : []
+    }
 
-#     active_auth = {
-#       'weight_threshold' : 1,
-#       'account_auths'    : [],
-#       'key_auths'        : [[active,1]], 
-#       'address_auths'    : []
-#     }
+    owner_auth = {
+      'weight_threshold' : 1,
+      'account_auths'    : [[DISCOIN_ADMIN_ID,1]],
+      'key_auths'        : [[owner,1]], 
+      'address_auths'    : []
+    }
 
-#     owner_auth = {
-#       'weight_threshold' : 1,
-#       'account_auths'    : [[account_id('discoin.admin'),1]],
-#       'key_auths'        : [[owner,1]], 
-#       'address_auths'    : []
-#     }
-
-#     ops = account_update(
-#       account_id(account), 
-#       owner_auth, 
-#       active_auth, 
-#       {'memo_key':memo_key},
-#       [wifs['discoin.admin']],
-#       assets['DISCOIN']['id']
-#     )
+    au_op = account_update_op(
+      account_id(account), 
+      owner_auth, 
+      active_auth, 
+      {'memo_key':memo_key}
+    )
+    
+    tx = build_tx_and_broadcast(
+      [au_op] 
+    , None)
+    return jsonify( {'tx':tx} )
 
   # Crea la TX para invitar a una negocio a que claimee su credito.
   @app.route('/api/v3/business/endorse/create', methods=['POST'])
@@ -960,7 +1070,6 @@ if __name__ == '__main__':
     tx  = request.json.get('tx')
     pk  = request.json.get('pk')
     
-    import unicodedata
     priv_key = str(pk)
     
     print ' ===> TX:'

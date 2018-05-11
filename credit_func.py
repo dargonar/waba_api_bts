@@ -5,15 +5,7 @@ from ops_func import *
 from utils import ALL_TRACKED_ASSETS, DISCOIN_SYMBOL, DISCOIN_CREDIT_SYMBOL, DISCOIN_ACCESS_SYMBOL
 
 wifs = {
-#  'matias'            : '5Jg4pQNnJdMboeRaFa1dQznDt2fc4GunjSLPtJZ828grKv1SxTm',
-#  'beto'              : '5JiF8n5nxoJX6qQ45VVtURnTBZvbPBMTb756WptAkNZGMfpgw3e',
-#  'marcio'            : '5K41mU4XhmbJ2ZX3fSqhoFi1iVKYcwvM3e84tKuLbKGPm5SxWPd', 
-#  'propuesta-par'     : '5K5p1J9yXWpY9qvpD2CTv5VLqmda4QxqayQT2w3Q2vRW9xfVhwd',
-#  'petoelpatoputo'    : '5HuSJENqeLwKEdJDFRahhKvdniqt4V2RZSnMSd9MrU82EhSGuhW',
-#  'gobierno-par'      : '',
-#  'moneda-par.prueba' : '5Hqk35nSEHYFRXsrZgpZ5yuHv6Nged7hmWCrrbYazeJwDKSYWFZ',
-#  'moneda-par.matias' : '5KaMXhrGoHcNJuoZ25ZieM4BLhBR7xwXu64UncX3FaUTJ2Kx9fG',
-  
+
   'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 }
 
