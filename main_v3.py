@@ -40,7 +40,7 @@ def create_app(**kwargs):
 
   @app.before_request
   def log_request():
-    print request.data
+    print ('request.data', request.data)
   
   @app.before_request
   def before_request():
@@ -49,9 +49,9 @@ def create_app(**kwargs):
   @app.teardown_request
   def teardown_request(exception=None):
     diff = time.time() - g.start
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-    print 'EL REQUEST TOTAL TOMO =>', diff
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    print ('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    print ('EL REQUEST TOTAL TOMO =>', diff)
+    print ('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     
   CORS(app)
     
@@ -153,13 +153,13 @@ if __name__ == '__main__':
       CORE_ASSET
     )[0]
 
-    print "************************************************"
-    print json.dumps(endorse_transfer_op, indent=2)
-    print "*********************"
+    print( "************************************************")
+    print (json.dumps(endorse_transfer_op, indent=2))
+    print ("*********************")
 
     # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
-    print "toma => ", endorse_transfer_op[1]['fee']['amount']
-    print "************************************************"
+    print ("toma => ", endorse_transfer_op[1]['fee']['amount'])
+    print ("************************************************")
 
     tx = build_tx_and_broadcast(
       account_whitelist(
@@ -204,7 +204,7 @@ if __name__ == '__main__':
       tx = request.json
       
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( {'res':res} )
 
 #   @app.route('/api/v3/get_global_properties', methods=['GET'])
@@ -323,7 +323,7 @@ if __name__ == '__main__':
 
       tx['signatures'] = [signature]
       p = rpc.network_broadcast_transaction_sync(tx)
-      print json.dumps(p, indent=2)
+      print( json.dumps(p, indent=2))
       return jsonify({'ok':'ok', 'coco':p})
 
     except Exception as e:
