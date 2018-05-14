@@ -15,7 +15,7 @@ from utils import *
 from models import *
 
 WS_NODE = os.environ.get('WS_NODE', 'ws://localhost:11011/')
-print 'using WS_NODE =>', WS_NODE
+print ('using WS_NODE =>', WS_NODE)
  
 def send_notification(account_name, message):
 
@@ -25,10 +25,10 @@ def send_notification(account_name, message):
     player_id = pi.push_id if pi else None
       
   if not player_id:
-    print 'No encontre el player_id de =>', account_name
+    print ('No encontre el player_id de =>', account_name)
     return
   
-  print "FOUND =>", account_name, "=", player_id 
+  print ("FOUND =>", account_name, "=", player_id )
   
   header = {"Content-Type": "application/json; charset=utf-8",
             "Authorization": "Basic YmRjMjQ2N2UtZDZjNi00ZTM4LTgxMzQtNTZlMTVmZTU1N2I4"}
@@ -46,7 +46,7 @@ def send_notification(account_name, message):
     }
   }
    
-  print json.dumps(payload)
+  print( json.dumps(payload))
     
   req = requests.post("https://onesignal.com/api/v1/notifications", headers=header, data=json.dumps(payload))
   print(req.status_code, req.reason)
@@ -96,11 +96,11 @@ def on_message(ws, message):
             a = amount_value(amounts[i],asset)
             
             msg = '{0} te ha enviado {1} PAR'.format(f, a)
-            print t, msg
+            print( t, msg)
             send_notification(t, msg)
       
       except Exception as ex:
-        print ex
+        print (ex)
         logging.error(traceback.format_exc())
 
   #     #print 'pidiendo bloque => ', int(block_id[0:8], 16)
@@ -116,10 +116,10 @@ def on_message(ws, message):
   #         print op[1]['to']
 
 def on_error(ws, error):
-  print error
+  print( error)
 
 def on_close(ws):
-  print "### closed ###"
+  print ("### closed ###")
   sleep(5)
   run_again()
 

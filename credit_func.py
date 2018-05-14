@@ -92,29 +92,29 @@ def set_overdraft(accounts_to_issue):
 
   init(list(accounts_to_issue))
   
-  print '=================================='
-  print 'set_overdraft::accounts_to_issue'
-  print json.dumps(accounts_to_issue)
-  print accounts_to_issue
-  print '=================================='
+  print ('==================================')
+  print ('set_overdraft::accounts_to_issue')
+  print (json.dumps(accounts_to_issue))
+  print (accounts_to_issue)
+  print ('==================================')
     
     
   ops = []
   for account, new_desc in accounts_to_issue.iteritems():
 
-    print '=================================='
-    print 'set_overdraft::account and new_OD'
-    print account
-    print account_id(account)
-    print new_desc
-    print '=================================='
+    print ('==================================')
+    print ('set_overdraft::account and new_OD')
+    print (account)
+    print (account_id(account))
+    print (new_desc)
+    print ('==================================')
     
     
     balances = rpc.db_get_account_balances(account_id(account), [assets[DISCOIN_SYMBOL]['id'], assets[DISCOIN_CREDIT_SYMBOL]['id']])
-    print '=================================='
-    print 'set_overdraft::check balances'
-    print json.dumps(balances)
-    print 'END =============================='
+    print ('==================================')
+    print ('set_overdraft::check balances')
+    print (json.dumps(balances))
+    print ('END ==============================')
     acceptable_assets = [assets[DISCOIN_SYMBOL]['id'], assets[DISCOIN_CREDIT_SYMBOL]['id']]
     assert(balances[0]['asset_id'] in acceptable_assets), "Invalid 0 balance"
     assert(balances[1]['asset_id'] in acceptable_assets ), "Invalid 1 balance"
@@ -147,10 +147,10 @@ def set_overdraft(accounts_to_issue):
   #print json.dumps(ops, indent=2)
   #return
   
-  print '======================================='
-  print 'process::#1 about to set overdearft'
-  print json.dumps (accounts_to_issue)
-  print 'END ==================================='
+  print ('=======================================')
+  print ('process::#1 about to set overdearft')
+  print (json.dumps (accounts_to_issue))
+  print ('END ===================================')
   return set_fees_and_broadcast(ops, [wifs['discoin.admin']], CORE_ASSET)
 
 #   return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
@@ -243,7 +243,7 @@ def WARNING_multisig_bring_them_all_proposal(account):
         1 #insert into white list
       )
     )
-  print json.dumps(ops, indent=2)
+  print (json.dumps(ops, indent=2))
   #set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
   #print json.dumps(ops, indent=2)
@@ -327,7 +327,7 @@ def multisig_claim_fees(assets_to_claim):
 def WARNING_clean_account(orig):
   
   balances = rpc.db_get_account_balances(account_id(orig))
-  print json.dumps(balances, indent=2)
+  print( json.dumps(balances, indent=2))
 
   ops = []
 
@@ -345,10 +345,10 @@ def WARNING_clean_account(orig):
         amount_value(b['amount'], assets_by_id[b['asset_id']])
       )
 
-  print len(ops)
+  print( len(ops))
 
   if len(ops) == 0:
-    print "nada para limpiar en ", orig
+    print ("nada para limpiar en ", orig)
     return
 
   ops = transfer(
@@ -371,7 +371,7 @@ def WARNING_clean_account(orig):
     [wifs['moneda-par.prueba'],wifs['propuesta-par'],wifs['marcio'],wifs['beto']]
   )
 
-  print json.dumps(tx, indent=2)  
+  print( json.dumps(tx, indent=2)  )
 
 
 if __name__ == '__main__':

@@ -58,7 +58,7 @@ def call_rpc_impl(api, method, *params):
   if 'result' in res:
     return res['result']
   if 'code' in res['error']:
-    print res['error']
+    print (res['error'])
     raise RpcError(res['error']['message'], res['error']['code'])
   else:
     raise RpcError(res['error']['message'], 6969696969)
@@ -67,9 +67,9 @@ def call_rpc(api, method, *params):
   try:
     return call_rpc_impl(api, method, params)
   except Exception as e:
-    print traceback.format_exc()
+    print( traceback.format_exc())
     exc_info = sys.exc_info()
-    raise exc_info[0], exc_info[1], exc_info[2]
+    raise (exc_info[0], exc_info[1], exc_info[2])
   
 #--- new 2.x 
 def db_get_objects(objects):

@@ -37,7 +37,7 @@ def get_account_id(account_name):
   account_id = mc.get(key)
   if not account_id:
     tmp = rpc.db_get_account_by_name(account_name)
-    print 'MIRALO VIEN TMP => ', tmp
+    print ('MIRALO VIEN TMP => ', tmp)
     if tmp:
       account_id = tmp['id']
       mc.set(key, account_id)

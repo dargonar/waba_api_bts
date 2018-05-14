@@ -43,8 +43,8 @@ def init_categories():
     if db.query(Category).first():
       return
     for cat in cats:
-      print ' ================== Initilizing categories:'
-      print cat
+      print (' ================== Initilizing categories:')
+      print (cat)
       category = Category()
       category.name        = cat['name']
       category.description = cat['name']

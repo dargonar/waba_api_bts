@@ -117,8 +117,8 @@ class CreditRequest(graphene.ObjectType):
   
   def __init__(self, ops):
     self.ops   = ops
-    print 'CREDIT REQUEST *************************** largo %d' % len(ops)
-    print ops
+    print ('CREDIT REQUEST *************************** largo %d' % len(ops))
+    print (ops)
 
     main_op = ops[-1 if len(ops)==3 else -2].oph['op']
     
@@ -161,7 +161,7 @@ class OverdraftChange(graphene.ObjectType):
   def __init__(self, ops):
     self.ops   = ops
 
-    print "OverdraftChange => ", ops
+    print( "OverdraftChange => ", ops)
 
     main_op = ops[1].oph['op']
     
@@ -413,9 +413,9 @@ class Account(graphene.ObjectType):
   
   def resolve_balance(self, args, context, info):
     bals = rpc.db_get_account_balances(self.account['id'])
-    print '**** bals ****'
-    print bals
-    print '**************'
+    print ('**** bals ****')
+    print (bals)
+    print ('**************')
 
     res = []
     for b in bals:
@@ -434,9 +434,9 @@ class Account(graphene.ObjectType):
       limit   = int(args.get('limit', 100))
       #start   = int(args.get('start', 0))
       start = 0
-      print '[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start)
+      print ('[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start))
       raw_ops = rpc.history_get_relative_account_history(self.account['id'], stop, limit, start)
-      print '[END] rpc.history_get_relative_account_history '
+      print ('[END] rpc.history_get_relative_account_history ')
 
     else:
       stop    = args.get('stop', '1.11.0')
@@ -444,9 +444,9 @@ class Account(graphene.ObjectType):
       start   = args.get('start', '1.11.0')
       start   = '1.11.0' if start == '0' else start
 
-      print '[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start)
+      print ('[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start))
       raw_ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
-      print '[END] rpc.history_get_account_history x'
+      print ('[END] rpc.history_get_account_history x')
 
     txs = []
 
@@ -487,7 +487,7 @@ class Account(graphene.ObjectType):
     while j < len(txs):
 
       ops = txs[j]
-      print '=======>WORKING NEW TX'
+      print( '=======>WORKING NEW TX')
 
       i = 0
 
@@ -502,8 +502,8 @@ class Account(graphene.ObjectType):
           pack1 = [ ops[i+x]['op'][0] for x in range(len(ts))  ]
           pack2 = [ t[0] for t in ts ]
 
-          print "OPS_ORIG: ", pack1
-          print "TEMPLATE: ", pack2, u, i
+          print ("OPS_ORIG: ", pack1)
+          print ("TEMPLATE: ", pack2, u, i)
 
           if pack1 == pack2:
             
@@ -520,7 +520,7 @@ class Account(graphene.ObjectType):
           u = u + 1
 
       while i < len(ops):
-        print "meto normal ", ops[i]['op'][0]
+        print( "meto normal ", ops[i]['op'][0])
         
         # HACK HACK CUSTOM_OPERATION
         if ops[i]['op'][0] != 35:
@@ -530,7 +530,7 @@ class Account(graphene.ObjectType):
 
       j = j + 1
        
-    print 'voy a retornar history'
+    print( 'voy a retornar history')
     return history
 
 class Query(graphene.ObjectType):
@@ -555,9 +555,9 @@ class Query(graphene.ObjectType):
     account_name = args.get('name')
     if not account_name: raise
 
-    print 'ACA ESTYO cache.get_account_id'  
+    print ('ACA ESTYO cache.get_account_id'  )
     account_id = cache.get_account_id(ACCOUNT_PREFIX + account_name)
-    print 'OSHE MIRA ', account_id  
+    print ('OSHE MIRA ', account_id  )
     return Account(cache.get_account(account_id))
 
 

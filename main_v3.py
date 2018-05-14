@@ -1,4 +1,6 @@
-# coding: utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import logging
@@ -34,6 +36,15 @@ import cache
 
 import init_model
 
+from bitsharesbase.account import BrainKey, Address, PublicKey, PrivateKey
+from bitsharesbase.memo import (
+      get_shared_secret,
+      _pad,
+      _unpad,
+      encode_memo,
+      decode_memo
+    )
+  
 ERR_UNKNWON_ERROR    = 'unknown_error'
 
 REGISTER_PRIVKEY = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
@@ -79,7 +90,7 @@ def create_app(**kwargs):
 
   @app.before_request
   def log_request():
-    print request.data
+    print( request.data)
   
   @app.before_request
   def before_request():
@@ -88,9 +99,9 @@ def create_app(**kwargs):
   @app.teardown_request
   def teardown_request(exception=None):
     diff = time.time() - g.start
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-    print 'EL REQUEST TOTAL TOMO =>', diff
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    print( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    print ('EL REQUEST TOTAL TOMO =>', diff)
+    print ('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     
   CORS(app)
     
@@ -101,8 +112,9 @@ if __name__ == '__main__':
   
   @app.errorhandler(Exception)
   def unhandled_exception(e):
-    print 'ERROR OCCURRED:'
-    print str(e)
+    print( 'ERROR OCCURRED:')
+    print( str(e))
+    print( traceback.format_exc())
     return make_response(jsonify({'error': str(e)}), 500)
   
   @app.route('/api/v3/dashboard/kpis', methods=['POST', 'GET'])
@@ -271,7 +283,7 @@ if __name__ == '__main__':
       'initial_credit'  : next(( amount_value(x['amount'], the_assets[x['asset_id']]) for x in p if x['asset_id'] == DISCOIN_CREDIT_ID), None), 
       'ready_to_access' : next(( amount_value(x['amount'], the_assets[x['asset_id']]) for x in p if x['asset_id'] == DISCOIN_ACCESS_ID), None)
     }
-    print '================================== get_business_balances #3'
+    print( '================================== get_business_balances #3')
     return x
   
   def get_business_rate(account_id):
@@ -408,45 +420,47 @@ if __name__ == '__main__':
   # Subaccount Management
   # =================================================================================================
   
+  def whatisthis(s):
+    if isinstance(s, str):
+        print (s, " is a ordinary string")
+    elif isinstance(s, unicode):
+        print (s, " is a unicode string")
+    else:
+        print ("not a string")
+  
   # Login
   @app.route('/api/v3/business/login/', methods=['GET', 'POST'])
   def business_login():
-    
-    from bitsharesbase.account import BrainKey, Address, PublicKey, PrivateKey
-    from bitsharesbase.memo import (
-      get_shared_secret,
-      _pad,
-      _unpad,
-      encode_memo,
-      decode_memo
-    )
-    
+    import codecs
+    import unicodedata
     pubKey        = rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['options']['memo_key']
-    memo_from     = request.json.get('from')
-    memo_to       = request.json.get('to')
+    memo_from     = str(request.json.get('from'))
+    memo_to       = str(request.json.get('to'))
     memo_nonce    = 0
-    memo_message  = request.json.get('message')
-    print pubKey
-    print memo_from
-    print memo_to
-    print memo_nonce
-    print memo_message
+    memo_message  = str(request.json.get('message'))
+    print( pubKey)
+    print( memo_from,  memo_to, memo_nonce, memo_message)
+#     whatisthis(memo_message)
     
-    dec = decode_memo(PrivateKey(REGISTER_PRIVKEY),
-                      PublicKey(memo_from, prefix="BTS"),
-                              0,
-                              memo_message)
+#     memo_message = '7505b97933b143eadddfda7ba2f92c14'.encode().decode('utf-8')
+#     memo_message = '%s' % unicodedata.normalize('NFKD', memo_message).encode('ascii','ignore')
+    memo_message = u'%s' % memo_message
+    print(memo_message, ' --> tocado')
+    dec = decode_memo(  PrivateKey(REGISTER_PRIVKEY),
+                        PublicKey(memo_from, prefix='BTS'),
+                        0,
+                        memo_message)
 
     #msg   = bts2helper_memo_encode(REGISTER_PRIVKEY, str(memo_from), str('123456789').encode('hex'))
     #msg   = bts2helper_memo_decode(REGISTER_PRIVKEY, pubKey, memo_from, memo_to, memo_nonce, memo_message)
     
-    return jsonify( { 'res' : dec } )
+    return jsonify( { 'res' : str(dec) } )
   
   # Lista las subcuentas de un business.
   @app.route('/api/v3/business/<business_id>/subaccount/list/<start>', methods=['GET', 'POST'])
   def business_account_list(business_id, start):
     # EJEMPLO: http://35.163.59.126:8080/api/v3/business/1.2.25/subaccount/list/0
-    print ' == get_withdraw_permissions_by_giver:'
+    print( ' == get_withdraw_permissions_by_giver:')
     if not start or str(start).strip()=='0':
       start = '1.12.0'
     perms = rpc.db_get_withdraw_permissions_by_giver(business_id, start, 100)
@@ -472,7 +486,7 @@ if __name__ == '__main__':
   def business_account_list_permissions(account_id):
     # EJEMPLO: http://35.163.59.126:8080/api/v3/business/subaccount/list/1.2.27
     res = rpc.db_get_withdraw_permissions_by_recipient(account_id, '1.12.0', 100)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( { 'subaccounts' : res } )
   
   # Crea la TX para agregar una subcuenta a un negocio, habilita a una cuenta a "chupar" de la cuenta madre del negocio.
@@ -495,25 +509,25 @@ if __name__ == '__main__':
   
   def subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods):
     
-    print ' == subaccount_add_or_update_create_impl #1'
+    print( ' == subaccount_add_or_update_create_impl #1')
     # Check if business has credit.
     p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
     if p[0]['amount'] <= 0:
       return {'error':'business_has_no_credit'}
     # Check if subaccount is valid account.
-    print ' == subaccount_add_or_update_create_impl #2'
+    print( ' == subaccount_add_or_update_create_impl #2')
     subaccounts = rpc.db_get_accounts([subaccount_id])
     if not subaccounts or len(subaccounts)==0:
       return {'error': 'subaccount_not_exists'}
     
-    print ' == subaccount_add_or_update_create_impl #2'
+    print( ' == subaccount_add_or_update_create_impl #2')
     # Validamos que la subaccount_id no tenga ya permisos de withdraw por parte del comercio:
     perm = get_withdraw_permission(business_id, subaccount_id)
 #     if perm:
 #       return {'error': 'subaccount_id_already_has_permission'}
       
-    print ' ======================================================'
-    print ' ====== subaccount_add_or_update_create_impl #3'
+    print( ' ======================================================')
+    print (' ====== subaccount_add_or_update_create_impl #3')
     asset, asset_core = rpc.db_get_assets([DISCOIN_ID, CORE_ASSET])
     
     # ~ie:<%y%m%d>:<1.2.1526>:25000
@@ -526,28 +540,28 @@ if __name__ == '__main__':
     if not periods:
       periods = 365 # 365 periods = 1 year
     
-    print ' ======================================================'
-    print ' ====== subaccount_add_or_update_create_impl #4'
+    print( ' ======================================================')
+    print (' ====== subaccount_add_or_update_create_impl #4')
     my_amount = reverse_amount_value(limit, asset)
     my_amount_asset = {
       'amount'  : int(my_amount),
       'asset_id'   : DISCOIN_ID
     }
     if perm:
-      print ' == IS UPDATE'
+      print( ' == IS UPDATE')
 #       print json.dumps(perm, indent=2)
       withdraw_permission_op = withdraw_permission_update(business_id, subaccount_id, my_amount_asset, period, periods, _from, perm, None, CORE_ASSET)
     else:
-      print ' == IS CREATE'
+      print (' == IS CREATE')
       withdraw_permission_op = withdraw_permission_create(business_id, subaccount_id, my_amount_asset, period, periods, _from, None, CORE_ASSET)
     
     
     fees = rpc.db_get_required_fees([withdraw_permission_op[0]] , CORE_ASSET)
     
-    print ' == fees: '
-    print fees
-    print ' == Calc fee'
-    print amount_value(fees[0]['amount'], asset_core)
+    print( ' == fees: ')
+    print (fees)
+    print (' == Calc fee')
+    print (amount_value(fees[0]['amount'], asset_core))
     
     _transfer = transfer(
         DISCOIN_ADMIN_ID,
@@ -558,8 +572,8 @@ if __name__ == '__main__':
         None,
         CORE_ASSET
     )
-    print ' == transfer: '
-    print _transfer
+    print( ' == transfer: ')
+    print (_transfer)
     
     
 #     _transfer +
@@ -604,7 +618,7 @@ if __name__ == '__main__':
     # como testeamos el permiso?  -> transfer discoin.biz4.subaccount1 discoin.biz4.subaccount2 10000 THEDISCOIN.M "ehhh" true
 
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( {'res':res} )
   
   # =================================================================================================
@@ -631,7 +645,7 @@ if __name__ == '__main__':
   # Retorna los permisos de "retiro" que tiene una cuenta en un negocio.
   def get_withdraw_permission(business_id, subaccount_id):
     
-    print ' == get_withdraw_permission #1'
+    print( ' == get_withdraw_permission #1')
     res = rpc.db_get_withdraw_permissions_by_recipient(subaccount_id, '1.12.0', 100)
     for p in res[::-1]:
 #       print ' == get_withdraw_permission #2'
@@ -642,29 +656,29 @@ if __name__ == '__main__':
     
   def subaccount_refund_impl(business_id, subaccount_id, _to, amount, bill_amount, bill_id):
     
-    print ' === subaccount_refund_impl #1'
+    print( ' === subaccount_refund_impl #1')
     asset, asset_core = rpc.db_get_assets([DISCOIN_ID, CORE_ASSET])
     
-    print ' === subaccount_refund_impl #2'
+    print (' === subaccount_refund_impl #2')
     my_amount = reverse_amount_value(amount, asset)
     my_amount_asset = {
       'amount'   : int(my_amount),
       'asset_id' : DISCOIN_ID
     }
     
-    print ' === subaccount_refund_impl #3'
+    print( ' === subaccount_refund_impl #3')
     withdraw_permission          = get_withdraw_permission(business_id, subaccount_id)
     
-    print ' === subaccount_refund_impl #4'
+    print (' === subaccount_refund_impl #4')
     if not withdraw_permission:
       return {'error': 'subaccount_has_no_permission'}
     
-    print withdraw_permission
-    print ' === subaccount_refund_impl #5'
+    print( withdraw_permission)
+    print (' === subaccount_refund_impl #5')
     withdraw_permission_claim_op = withdraw_permission_claim(withdraw_permission, business_id, subaccount_id, my_amount_asset, None, CORE_ASSET)
     
-    print ' == withdraw_permission_claim_op: '
-    print withdraw_permission_claim_op
+    print (' == withdraw_permission_claim_op: ')
+    print (withdraw_permission_claim_op)
     
     
     _refund = transfer(
@@ -673,13 +687,13 @@ if __name__ == '__main__':
         asset,
         amount
     )
-    print ' == refund: '
-    print _refund
+    print( ' == refund: ')
+    print (_refund)
     
     fees = rpc.db_get_required_fees([withdraw_permission_claim_op[0], _refund] , CORE_ASSET)
     
-    print ' == fees: '
-    print fees
+    print (' == fees: ')
+    print (fees)
     
     _transfer = transfer(
         DISCOIN_ADMIN_ID,
@@ -687,8 +701,8 @@ if __name__ == '__main__':
         asset_core,
         amount_value(fees[0]['amount'], asset_core)+amount_value(fees[1]['amount'], asset_core)
       )
-    print ' == transfer: '
-    print _transfer
+    print (' == transfer: ')
+    print (_transfer)
     
     tx = build_tx_and_broadcast(
       _transfer + [withdraw_permission_claim_op[0]] + _refund
@@ -726,7 +740,7 @@ if __name__ == '__main__':
     tx['signatures'].append(signature);    
     
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( {'res':res, 'tx':tx} )
   
     
@@ -782,29 +796,29 @@ if __name__ == '__main__':
     
     business_id     = cache.get_account_id(business_name)
     
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #1'
+    print( ' ======================================================')
+    print (' ====== XX endorse_create_impl #1')
     # TODO: utilizar el sender(to) en vez de DISCOIN_ADMIN_ID.
     # Check if admin account has access tokens.
     p = rpc.db_get_account_balances(DISCOIN_ADMIN_ID, [DISCOIN_ACCESS_ID])
     if p[0]['amount'] == 0:
       return {'error':'no_endorsement_available'}
     
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #2'
+    print( ' ======================================================')
+    print (' ====== XX endorse_create_impl #2')
     # Check if business has credit.
     p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
     if p[0]['amount'] > 0:
       return {'error':'already_have_credit'}
     
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #3'
+    print( ' ======================================================')
+    print (' ====== XX endorse_create_impl #3')
     p = rpc.db_get_account_balances(business_id, [DISCOIN_ACCESS_ID])
     if p[0]['amount'] > 0:
       return {'error':'already_have_endorsement'}
 
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #4'
+    print( ' ======================================================')
+    print( ' ====== XX endorse_create_impl #4')
     asset, asset_core = rpc.db_get_assets([DISCOIN_ACCESS_ID, CORE_ASSET])
     
     # ~ie:<%y%m%d>:<1.2.1526>:25000
@@ -817,15 +831,15 @@ if __name__ == '__main__':
 #       'to'      : 'GPH6bM4zBP7PKcSmXV7voEdauT6khCDGUqXyAsq5NCHcyYaNSMYBk',
 #       'nonce'   : 123456
         
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #5'
+    print( ' ======================================================')
+    print( ' ====== XX endorse_create_impl #5')
    
     endorse_transfer_op = transfer(DISCOIN_ADMIN_ID, business_id, asset, initial_credit, memo, None, CORE_ASSET)
     
     # Para ver prototipos de TXs ver http://docs.bitshares.org/bitshares/tutorials/construct-transaction.html 
 
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #6'
+    print( ' ======================================================')
+    print( ' ====== XX endorse_create_impl #6')
     #get_prototype_operation account_whitelist_operation
     tx = build_tx_and_broadcast(
       account_whitelist(
@@ -841,9 +855,9 @@ if __name__ == '__main__':
       )
     , None)
     
-    print ' ======================================================'
-    print ' ====== XX endorse_create_impl #7'
-    print ' ======================================================'
+    print( ' ======================================================')
+    print (' ====== XX endorse_create_impl #7')
+    print (' ======================================================')
     
     return tx
   
@@ -853,23 +867,23 @@ if __name__ == '__main__':
     # TEST: curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz3","initial_credit":"12500"}' http://35.163.59.126:8080/api/v3/business/endorse/create/broadcast
     business_name   = request.json.get('business_name')  
     initial_credit  = request.json.get('initial_credit')  
-    print ' ======================================================'
-    print ' ====== endorse_create_and_broadcast #1'
+    print( ' ======================================================')
+    print (' ====== endorse_create_and_broadcast #1')
     tx  = endorse_create_impl(business_name, initial_credit)
     
-    print ' ======================================================'
-    print ' ====== endorse_create_and_broadcast #2'
+    print (' ======================================================')
+    print (' ====== endorse_create_and_broadcast #2')
     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
     
-    print ' ======================================================'
-    print ' ====== endorse_create_and_broadcast #3'
+    print( ' ======================================================')
+    print( ' ====== endorse_create_and_broadcast #3')
     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
     tx['signatures'] = [signature]
     
     
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     
     return jsonify( {'res':res, 'tx':tx} )
   
@@ -904,8 +918,8 @@ if __name__ == '__main__':
       'message' : '~ae'.encode('hex')
     }
     
-    print ' ==== ACCESS BALANCE:'
-    print access_balance[0]['amount']
+    print( ' ==== ACCESS BALANCE:')
+    print( access_balance[0]['amount'])
     
     apply_transfer_op = transfer(
       business_id,
@@ -917,13 +931,13 @@ if __name__ == '__main__':
       CORE_ASSET
     )[0]
 
-    print "************************************************"
-    print json.dumps(apply_transfer_op, indent=2)
-    print "*********************"
+    print( "************************************************")
+    print( json.dumps(apply_transfer_op, indent=2))
+    print( "*********************")
 
     # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
-    print "toma => ", apply_transfer_op[1]['fee']['amount']
-    print "************************************************"
+    print( "toma => ", apply_transfer_op[1]['fee']['amount'])
+    print( "************************************************")
 
     tx = build_tx_and_broadcast(
       account_whitelist(
@@ -959,18 +973,18 @@ if __name__ == '__main__':
 #     initial_credit  = request.json.get('initial_credit')
     
 #     op_id           = request.json.get('op_id')
-    print ' ======================================================'
-    print ' ====== endorse_apply_and_broadcast #1'
+    print( ' ======================================================')
+    print( ' ====== endorse_apply_and_broadcast #1')
     
 #     tx  = endorse_apply_impl(business_name, initial_credit)
     tx  = endorse_apply_impl(business_name)
     
-    print ' ======================================================'
-    print ' ====== endorse_apply_and_broadcast #2'
+    print( ' ======================================================')
+    print( ' ====== endorse_apply_and_broadcast #2')
     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
     
-    print ' ======================================================'
-    print ' ====== endorse_apply_and_broadcast #3'
+    print( ' ======================================================')
+    print( ' ====== endorse_apply_and_broadcast #3')
     signature = bts2helper_sign_compact(to_sign, wifs[business_name])
     
     if 'signatures' not in tx: 
@@ -978,7 +992,7 @@ if __name__ == '__main__':
     tx['signatures'].append(signature);
     
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( {'res':res, 'tx':tx} )
   
   
@@ -995,7 +1009,7 @@ if __name__ == '__main__':
 
     return jsonify( {'ok':'ok'} )
     
-    print "apply auth => about to apply overdraft"
+    print( "apply auth => about to apply overdraft")
     set_overdraft(obj)
 
     return jsonify( {'ok':'ok'} )
@@ -1015,14 +1029,14 @@ if __name__ == '__main__':
     # >0: Parent category id -> list its Subcats
     # List subcategories of a given root category.
     data=[]
-    print ' ============== about to query categories'
+    print( ' ============== about to query categories')
     with session_scope() as db:
       q2 = db.query(Category)
       if len(search)>0:
         my_search = '%'+search+'%'
-        print ' ============== search:'
-        print search
-        print my_search
+        print( ' ============== search:')
+        print( search)
+        print( my_search)
         my_or = or_(Category.name.like(my_search), Category.description.like(my_search))
         q2 = q2.filter(my_or)
       if cat_level==1:
@@ -1032,12 +1046,12 @@ if __name__ == '__main__':
       if cat_level>0:
         q2 = q2.filter(Category.parent_id==cat_level)
       q2.order_by(Category.name).order_by(Category.description)
-      print ' ============== cat_level:'
-      print cat_level
+      print( ' ============== cat_level:')
+      print( cat_level)
       data = [ {'id' : c.id, 'name': c.name, 'description': c.description, 'parent_id': c.parent_id} for c in q2.all()] 
-      print ' ============== query result:'
-      print json.dumps(data)
-      print ' ============== END!'
+      print (' ============== query result:')
+      print (json.dumps(data))
+      print (' ============== END!')
     return jsonify( {"categories":data} )
   
 #   select * from  category where isnull(parent_id) order by name desc;
@@ -1062,7 +1076,7 @@ if __name__ == '__main__':
       tx = request.json
       
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print( json.dumps(res, indent=2))
     return jsonify( {'res':res} )
   
   @app.route('/api/v3/sign_and_push_tx', methods=['POST'])
@@ -1072,26 +1086,26 @@ if __name__ == '__main__':
     
     priv_key = str(pk)
     
-    print ' ===> TX:'
-    print json.dumps(tx, indent=2)
-    print ' ===> pk:'
-    print pk
+    print (' ===> TX:')
+    print (json.dumps(tx, indent=2))
+    print (' ===> pk:')
+    print (pk)
     
     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    print ' ===> TO-SIGN:'
-    print to_sign
+    print (' ===> TO-SIGN:')
+    print (to_sign)
     signature = bts2helper_sign_compact(to_sign, priv_key)
-    print '=== PRE ADD SIGNATURE:'
+    print ('=== PRE ADD SIGNATURE:')
     
     if 'signatures' not in tx: 
       tx['signatures'] = []
     tx['signatures'].append(signature);    
     
-    print ' ===> SIGNED TX:'
-    print json.dumps(tx, indent=2)
+    print (' ===> SIGNED TX:')
+    print (json.dumps(tx, indent=2))
     
     res = rpc.network_broadcast_transaction_sync(tx)
-    print json.dumps(res, indent=2)
+    print (json.dumps(res, indent=2))
     return jsonify( {'res':res} )
 
   
@@ -1112,14 +1126,14 @@ if __name__ == '__main__':
     
     # TEST: curl -H "Content-Type: application/json" -X POST -d '{"key":"BTS5NQUTrdEgKH4fz5L5DLJZBSkdLWUY4CfnaNZ77yvZAnUZNC89d"}' http://35.163.59.126:8080/api/v3/account/find
     
-    print ' ========================== Find Account by PubKey'
+    print( ' ========================== Find Account by PubKey')
     key  = request.json.get('key')
     account_ids = set(rpc.db_get_key_references([key])[0])
-    print ' == account_ids : '
-    print account_ids
+    print (' == account_ids : ')
+    print (account_ids)
     res = [real_name(a['name']) for a in rpc.db_get_accounts(list(account_ids))]
-    print ' == res : '
-    print json.dumps(res) 
+    print (' == res : ')
+    print (json.dumps(res) )
     return jsonify({"res" : res})
 
   @app.route('/api/v3/account/by_name/<account>', methods=['GET'])
@@ -1162,13 +1176,13 @@ if __name__ == '__main__':
         if tmp[0].startswith(search):
           
           add_account = True
-          print '=== Account: '
-          print tmp[0]
+          print( '=== Account: ')
+          print (tmp[0])
           # Only with no-credit and no black-listed
           if search_filter == 1:
             p = rpc.db_get_account_balances(tmp[1], [DISCOIN_CREDIT_ID])
-            print '=== Overdraft: '
-            print p[0]['amount']
+            print( '=== Overdraft: ')
+            print (p[0]['amount'])
             no_credit = p[0]['amount'] == 0
             no_black = tmp[1] not in rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['blacklisted_accounts']
             add_account = no_credit and no_black
@@ -1179,7 +1193,7 @@ if __name__ == '__main__':
             has_credit = p[0]['amount'] > 0
             #no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
             add_account = has_credit
-          print '==============='
+          print ('===============')
           if add_account:
             tmp[0] = ACCOUNT_PREFIX + tmp[0]
             res.append( tmp )
@@ -1245,7 +1259,7 @@ if __name__ == '__main__':
 
       tx['signatures'] = [signature]
       p = rpc.network_broadcast_transaction_sync(tx)
-      print json.dumps(p, indent=2)
+      print( json.dumps(p, indent=2))
       return jsonify({'ok':'ok', 'res':p})
 
     except Exception as e:
@@ -1287,10 +1301,10 @@ if __name__ == '__main__':
       category_id     = str( req.get('category_id') )
       subcategory_id  = str( req.get('subcategory_id') )
       
-      print '================== category_id'
-      print category_id
-      print '================== subcategory_id'
-      print subcategory_id
+      print ('================== category_id')
+      print (category_id)
+      print ('================== subcategory_id')
+      print (subcategory_id)
       
       with session_scope() as db:
         query = db.query(Business)
@@ -1298,10 +1312,10 @@ if __name__ == '__main__':
         query = query.filter(my_or)
         biz = query.first()
         if biz is not None:
-          print '================ Register biz: email_name_telephone_already_registered'
-          print biz.id
-          print biz.name
-          print biz.account
+          print ('================ Register biz: email_name_telephone_already_registered')
+          print (biz.id)
+          print (biz.name)
+          print (biz.account)
           return jsonify({'error': 'email_name_telephone_already_registered'})
         
         q2 = db.query(Category).filter(Category.id==category_id).filter(Category.parent_id==None)
@@ -1348,7 +1362,7 @@ if __name__ == '__main__':
       tx['signatures'] = [signature]
 
       p = rpc.network_broadcast_transaction_sync(tx)
-      print json.dumps(p, indent=2)
+      print( json.dumps(p, indent=2))
 
       biz = Business()
       with session_scope() as db:
@@ -1377,4 +1391,4 @@ if __name__ == '__main__':
   def not_found(error):
     return make_response(jsonify({'error': 'not_found'}), 404)
   
-  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",8080)))
+  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",8089)))

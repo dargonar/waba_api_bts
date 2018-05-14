@@ -39,7 +39,7 @@ def get_message(op):
 
 def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
 
-  print op
+  print (op)
   
   to_id   = op[1]['to']
   from_id = op[1]['from']
@@ -92,7 +92,7 @@ def do_import():
       while not my_block or last_block_num > my_block.block_num:
         
         from_block = int(my_block.block_num+1 if my_block else 1)
-        print from_block
+        print( from_block)
         
         next_block = rpc.db_get_block_header(from_block)
         
@@ -119,7 +119,7 @@ def do_import():
               try:
                 to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
               except Exception as ex:
-                print json.dumps(tx)
+                print( json.dumps(tx))
                 raise ex
               for le in db.query(LastError).filter(LastError.txid == to_sign).all():
                 le.block_num = new_block.block_num
@@ -128,10 +128,10 @@ def do_import():
               for op_in_trx, op in enumerate(tx['operations']):
                 if not ( op[0] == 0 and op[1]['amount']['asset_id'] in ALL_TRACKED_ASSETS ):
                   continue
-                print '======================================'
-                print 'do_importfound TX'
-                print op[1]['amount']['asset_id']
-                print 'END =================================='
+                print ('======================================')
+                print ('do_importfound TX')
+                print (op[1]['amount']['asset_id'])
+                print ('END ==================================')
                 t = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
                 db.add(t)
          
@@ -139,7 +139,7 @@ def do_import():
           my_block = new_block
       
   except Exception as ex:
-    print ex
+    print (ex)
     logging.error(traceback.format_exc())
 
   
