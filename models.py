@@ -176,13 +176,15 @@ class Category(Base, TimestampMixin):
   name         = Column(String(256), index=True)
   description  = Column(String(256), index=True)
   parent_id    = Column(Integer, index=True)
+  discount     = Column(Numeric(5,2), index=True)
   
-  def to_dict(self):
+  def to_dict(self, zero_if_parent_id_null=False):
     return {
       'id'          : self.id,
       'name'        : self.name,
       'description' : self.description,
-      'parent_id'   : self.parent_id
+      'parent_id'   : 0 if zero_if_parent_id_null and self.parent_id==None else self.parent_id,
+      'discount'    : self.discount
     }
 
 class Business(Base, TimestampMixin):

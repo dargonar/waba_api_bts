@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 
 from ops import *
@@ -21,7 +22,7 @@ def set_fees(ops, pay_in):
   print (json.dumps(pay_in, indent=2))
   fees = rpc.db_get_required_fees(ops, pay_in)
   print (' ================ ops_func::set_fees #2')
-  for i in xrange(len(ops)):
+  for i in range(len(ops)):
     print (' ================ ops_func::set_fees #3')
     ops[i][1]['fee'] = fees[i]
   print (' ================ ops_func::set_fees #4')
