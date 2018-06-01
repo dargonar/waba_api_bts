@@ -14,7 +14,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
 from sqlalchemy.sql import select, exists
 from sqlalchemy.pool import NullPool
-
+import copy
 from utils import *
 
 class CoerceToInt(TypeDecorator):
@@ -349,6 +349,19 @@ class DiscountSchedule(Base, TimestampMixin):
   business          = relationship("Business", back_populates="discount_schedule")
   
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+  
+  @staticmethod
+  def get_defaults(discount, biz_id):
+    schedules = []
+    my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
+    for valid_date in my_valid_dates:
+      sche              = DiscountSchedule()
+      sche.business_id  = biz_id
+      sche.date         = valid_date
+      sche.discount     = discount
+      schedules.append(sche)
+#       schedules.append(sche.to_dict())
+    return schedules
   
   @staticmethod
   def validate_schedule(schedule_array, min_discount):
