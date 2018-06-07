@@ -349,6 +349,17 @@ class DiscountSchedule(Base, TimestampMixin):
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   
   @staticmethod
+  def get_default(discount, biz_id):
+    schedules = []
+    for valid_date in valid_dates:
+      sche              = DiscountSchedule()
+      sche.business_id  = biz_id
+      sche.date         = valid_date
+      sche.discount     = discount
+      schedules.append(valid_date)
+    return schedules
+  
+  @staticmethod
   def validate_schedule(schedule_array, min_discount):
     import copy
     errors          = []
