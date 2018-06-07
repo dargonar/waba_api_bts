@@ -75,8 +75,8 @@ def call_rpc(api, method, *params):
 def db_get_objects(objects):
   return call_rpc('db', 'get_objects', objects)
 
-def db_get_asset_holders(asset_id):
-  return call_rpc('asset', 'get_asset_holders', asset_id)
+def db_get_asset_holders(asset_id, skip, count):
+  return call_rpc('asset', 'get_asset_holders', asset_id, skip, count)
 
 def db_get_asset_holders_count(asset_id):
   return call_rpc('asset', 'get_asset_holders_count', asset_id)

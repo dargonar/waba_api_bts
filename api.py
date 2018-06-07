@@ -45,10 +45,12 @@ from bitsharesbase.memo import (
     )
 
 from jsondiff import diff
-import binascii
+import hashlib, binascii
 
 import urllib.parse
 import urllib.request
+
+import stats
 
 ERR_UNKNWON_ERROR    = 'unknown_error'
 
@@ -87,7 +89,7 @@ wifs = {
   
        }
 
-mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+mc = Client(['127.0.0.1:11211'], debug=0)
 
 def create_app(**kwargs):
   app = Flask(__name__)
@@ -126,23 +128,20 @@ if __name__ == '__main__':
   @app.route('/api/v3/dashboard/kpis', methods=['POST', 'GET'])
   def dashboard_kpis():
     
+#     main_asset = cache.get_asset(DISCOIN_ID)
     main_asset = rpc.db_get_assets([DISCOIN_ID])
     users      = rpc.db_get_asset_holders_count(DISCOIN_ID)
     
     # ToDo: Construir KPIs posta
-    
-    _now = datetime.utcnow()
+    supply  = stats.get_asset_supply(DISCOIN_ID, mc)
+    airdrop = stats.get_asset_airdrop(DISCOIN_ID, mc)
+    _now    = datetime.utcnow()
     
     return jsonify( 
         {
-          'updated_at': str(_now),
-          'main_asset':main_asset,
-          'airdrop': {
-            'issued': 1500,
-            'max_supply': 10000000,
-            'tx_quantity': 1524,
-            'max_tx_quantity': 100000
-          },
+          'updated_at':   str(_now),
+          'main_asset':   supply,
+          'airdrop':      airdrop,
           'businesses': {
             'quantity': {
               'by_status': {
@@ -250,30 +249,32 @@ if __name__ == '__main__':
       str_diff = str(diff(schema, config))
       if 'delete' in str_diff:
         return jsonify( { 'error': 'not_valid_json_structure' , 'error_desc': str_diff} )
-      if try_int(config["warnings"]["first"]["amount"])<=0:
-        return jsonify( { 'error': 'warning_1_must_be_greater_zero'} )
-      if try_int(config["warnings"]["second"]["amount"])<=0:
-        return jsonify( { 'error': 'warning_2_must_be_greater_zero'} )
-      if try_int(config["warnings"]["first"]["amount"]) >= try_int(config["warnings"]["second"]["amount"]):
-        return jsonify( { 'error': 'warning_1_not_minor_warning_2'} )
-#       if try_int(config["bootstrap"]["transactions"]["max_refund_by_tx"]) => config["bootstrap"]["transactions"]["min_refund_by_tx"]):
+#       if try_int(config["warnings"]["first"]["from_amount"])<=0:
+#         return jsonify( { 'error': 'warning_1_must_be_greater_zero'} )
+#       if try_int(config["warnings"]["second"]["from_amount"])<=0:
+#         return jsonify( { 'error': 'warning_2_must_be_greater_zero'} )
+#       if try_int(config["warnings"]["third"]["from_amount"])<=0:
+#         return jsonify( { 'error': 'warning_3_must_be_greater_zero'} )
+#       if try_int(config["warnings"]["first"]["from_amount"]) >= try_int(config["warnings"]["second"]["from_amount"]):
 #         return jsonify( { 'error': 'warning_1_not_minor_warning_2'} )
-      if try_float(config["issuing"]["new_member_percent_pool"])<0.0 or try_float(config["issuing"]["new_member_percent_pool"])> 100.0:
-        return jsonify( { 'error': 'issuing_new_member_percent_pool_must_be_greater_0_and_less_100'} )
-      if len(config["bootstrap"]["refund"]) > 0:
-        last_from_tx  = -1
-        last_to_tx    = -1
-        for refund in config["bootstrap"]["refund"]:
-          if try_int(refund["from_tx"]) < 0:
-            return jsonify( { 'error': 'refund_from_must_be_equal_greater_zero'} )
-          if try_int(refund["to_tx"]) <= 0:
-            return jsonify( { 'error': 'refund_to_must_be_greater_zero'} )
-          if try_int(refund["to_tx"]) <= try_int(refund["from_tx"]): 
-            return jsonify( { 'error': 'refund_to_must_be_greater_from'} )
-          if try_float(refund["tx_amount_percent_refunded"])<0.0 or try_float(refund["tx_amount_percent_refunded"])> 100:
-            return jsonify( { 'error': 'refund_amount_must_be_greater_0_and_less_100'} )
-        last_from_tx    = try_int(refund["from_tx"])
-        last_to_tx      = try_int(refund["to_tx"])
+#       if try_int(config["warnings"]["second"]["from_amount"]) >= try_int(config["warnings"]["third"]["from_amount"]):
+#         return jsonify( { 'error': 'warning_2_not_minor_warning_3'} )
+#       if try_float(config["reserve_fund"]["new_business_percent"])<0.0 or try_float(config["reserve_fund"]["new_business_percent"])> 100.0:
+#         return jsonify( { 'error': 'issuing_new_member_percent_pool_must_be_greater_0_and_less_100'} )
+      
+#       last_from_tx  = -1
+#       last_to_tx    = -1
+#       for refund in config["bootstrap"]["refund"]:
+#         if try_int(refund["from_tx"]) < 0:
+#           return jsonify( { 'error': 'refund_from_must_be_equal_greater_zero'} )
+#         if try_int(refund["to_tx"]) <= 0:
+#           return jsonify( { 'error': 'refund_to_must_be_greater_zero'} )
+#         if try_int(refund["to_tx"]) <= try_int(refund["from_tx"]): 
+#           return jsonify( { 'error': 'refund_to_must_be_greater_from'} )
+#         if try_float(refund["tx_amount_percent_refunded"])<0.0 or try_float(refund["tx_amount_percent_refunded"])> 100:
+#           return jsonify( { 'error': 'refund_amount_must_be_greater_0_and_less_100'} )
+#       last_from_tx    = try_int(refund["from_tx"])
+#       last_to_tx      = try_int(refund["to_tx"])
 
       with session_scope() as db:
         nm, is_new = get_or_create(db, NameValue, name  = 'configuration')
@@ -307,7 +308,7 @@ if __name__ == '__main__':
     
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
     with session_scope() as db:
-      return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).all()] } );
+      return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).order_by(Business.id.desc()).all()] } )
   
   def build_business(biz):
     business                              = biz.to_dict()
@@ -365,9 +366,12 @@ if __name__ == '__main__':
   def dashboard_update_business_profile(account_id):
     # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": null,    "location": null,    "longitude": null,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
     # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": -22.36,    "location": null,    "longitude": -33.36,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
-    secret_text = 'secrettext_'
+    
+    #ToDo: Validar el secret!!!!
+    # por business y por admin
+    the_secret_text = '{0}_{1}'.format(very_secret_text, account_id)
+    
     if request.method=='GET':
-      the_secret_text = secret_text + account_id
       with session_scope() as db:
         return jsonify( { 'business': db.query(Business).filter(Business.account_id==account_id).first().to_dict_for_update(), 'secret' : the_secret_text } );
       
@@ -409,9 +413,12 @@ if __name__ == '__main__':
   def dashboard_update_business_schedule(account_id):
     # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": null,    "location": null,    "longitude": null,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
     # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": -22.36,    "location": null,    "longitude": -33.36,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
-    secret_text = 'secrettext_'
+    
+    # ToDo: Validar el secret!!!!
+    # por business y por admin
+    the_secret_text = '{0}_{1}'.format(very_secret_text, account_id)
+    
     if request.method=='GET':
-      the_secret_text = secret_text + account_id
       with session_scope() as db:
         biz = db.query(Business).filter(Business.account_id==account_id).first()
         if not biz:
@@ -424,10 +431,11 @@ if __name__ == '__main__':
     # ToDo: obtener minimo descuento de categoria y pasarlo como parametro
     errors = DiscountSchedule.validate_schedule(biz_schedule_json, 20)
     if len(errors)>0:
-      return jsonify(errors)
+      return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
     with session_scope() as db:
       biz = db.query(Business).filter(Business.account_id==account_id).first()
       if not biz:
+        print (' -- dashboard_update_business_schedule ERR#2' )
         return jsonify( { 'error' : 'account_id_not_found'} )
       biz.discount_schedule[:] = []
       db.add(biz)
@@ -443,8 +451,7 @@ if __name__ == '__main__':
         return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
       db.commit()
 
-#       return jsonify({'tx' : tx})
-    return jsonify({'ok':'ok'})
+    return jsonify({'ok':'schedule_updated_succesfully'})
 #     except Exception as e:
 #       logging.error(traceback.format_exc())
 #       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
@@ -586,6 +593,8 @@ if __name__ == '__main__':
 #       _from = datetime.utcnow().strftime('%y%m%d')
       _from = (datetime.utcnow()+timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S')
 #       _from = '2018-04-24T00:00:00'
+    else:
+      _from = datetime.fromtimestamp(try_int(_from/1000)).strftime('%Y-%m-%dT%H:%M:%S')
     if not period:
       period = 86400 # 1 day in seconds
     if not periods:
@@ -632,11 +641,12 @@ if __name__ == '__main__':
       [_transfer[0]] + [withdraw_permission_op[0]] 
     , None)
     
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
-    
-    tx['signatures'] = [signature]
-    return tx
+#     print (' ---------- ADD SUBACCOUNT', json.dumps(tx))
+    return extern_sign_tx(tx, REGISTER_PRIVKEY)['tx']
+#     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+#     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+#     tx['signatures'] = [signature]
+#     return tx
   
   # Broadcastea la TX para agregar una subcuenta a un negocio, habilita a una cuenta a "chupar" de la cuenta madre del negocio.
   @app.route('/api/v3/business/subaccount/add_or_update/create/broadcast', methods=['POST'])
@@ -955,7 +965,9 @@ if __name__ == '__main__':
     
     business_name   = request.json.get('business_name')  
     initial_credit  = request.json.get('initial_credit')
-
+    if try_int(initial_credit)<=0 or try_int(initial_credit)>100000:
+      return jsonify( {'error': 'MIN:1, MAX:100.000'})
+    
     tx = endorse_create_impl(business_name, initial_credit)
     
     if 'error' in tx:
@@ -1092,8 +1104,8 @@ if __name__ == '__main__':
       'message' : binascii.hexlify(b'~ae').decode('utf-8')
     }
     
-    print( ' ==== ACCESS BALANCE:')
-    print( access_balance[0]['amount'])
+#     print( ' ==== ACCESS BALANCE:')
+#     print( access_balance[0]['amount'])
     
     apply_transfer_op = transfer(
       business_id,
@@ -1105,13 +1117,13 @@ if __name__ == '__main__':
       CORE_ASSET
     )[0]
 
-    print( "************************************************")
-    print( json.dumps(apply_transfer_op, indent=2))
-    print( "*********************")
+#     print( "************************************************")
+#     print( json.dumps(apply_transfer_op, indent=2))
+#     print( "*********************")
 
-    # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
-    print( "toma => ", apply_transfer_op[1]['fee']['amount'])
-    print( "************************************************")
+#     # fees = rpc.db_get_required_fees([endorse_transfer_op], CORE_ASSET)
+#     print( "toma => ", apply_transfer_op[1]['fee']['amount'])
+#     print( "************************************************")
 
     tx = build_tx_and_broadcast(
       account_whitelist(
@@ -1133,6 +1145,7 @@ if __name__ == '__main__':
 #     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
 #     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
+    print (' ###################################### endorse_apply')
     print (tx)
     signed_tx = extern_sign_tx(tx, REGISTER_PRIVKEY)
     print (tx)
@@ -1283,17 +1296,6 @@ if __name__ == '__main__':
     print (' ===> pk:')
     print (pk)
     
-#     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-#     print (' ===> TO-SIGN:')
-#     print (to_sign)
-#     signature = bts2helper_sign_compact(to_sign, priv_key)
-#     print ('=== PRE ADD SIGNATURE:')
-#     if 'signatures' not in tx: 
-#       tx['signatures'] = []
-#     tx['signatures'].append(signature);    
-#     print (' ===> SIGNED TX:')
-#     print (json.dumps(tx, indent=2))
-
     tx = extern_sign_tx(tx, priv_key)    
 
 #     res = rpc.network_broadcast_transaction_sync(tx)
@@ -1363,7 +1365,11 @@ if __name__ == '__main__':
     # OLD searchAccount
     search = request.args.get('search', '')
     search_filter = try_int(request.args.get('search_filter',0))
-  
+    
+    if search=='*':
+      search=''
+    
+    print(' -- search:',search,' -- search_filter:',search_filter)
     # --------------------------------------------------- #
     # search_filter:
     #   0 = ALL
@@ -1380,13 +1386,13 @@ if __name__ == '__main__':
         if tmp[0].startswith(search):
           
           add_account = True
-          print( '=== Account: ')
-          print (tmp[0])
+#           print( '=== Account: ')
+#           print (tmp[0])
           # Only with no-credit and no black-listed
           if search_filter == 1:
             p = rpc.db_get_account_balances(tmp[1], [DISCOIN_CREDIT_ID])
-            print( '=== Overdraft: ')
-            print (p[0]['amount'])
+#             print( '=== Overdraft: ')
+#             print (p[0]['amount'])
             no_credit = p[0]['amount'] == 0
             no_black = tmp[1] not in rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['blacklisted_accounts']
             add_account = no_credit and no_black
@@ -1397,11 +1403,10 @@ if __name__ == '__main__':
             has_credit = p[0]['amount'] > 0
             #no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
             add_account = has_credit
-          print ('===============')
           if add_account:
             tmp[0] = ACCOUNT_PREFIX + tmp[0]
             res.append( tmp )
-
+    print (json.dumps(res))
     return jsonify( {'res' : res} )
 
   @app.route('/api/v3/account/register', methods=['POST'])
@@ -1465,12 +1470,23 @@ if __name__ == '__main__':
       signed_tx = extern_sign_tx(tx, wif)
       p = rpc.network_broadcast_transaction_sync(signed_tx['tx'])
       print( json.dumps(p, indent=2))
-      return jsonify({'ok':'ok', 'res':p})
+      
+      return jsonify({'ok':'ok', 'res':p, 'identicon': getIdenticonForAccount(name)})
 
     except Exception as e:
       logging.error(traceback.format_exc())
       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
 
+  def getIdenticonForAccount(account_name):
+    if not account_name:
+      account_name = 'discoin'
+    return hashlib.sha512(account_name.encode()).hexdigest()
+  
+  @app.route('/api/v3/account/identicon', methods=['GET'])
+  def account_identicon():
+    account_name        = request.args.get('account_name', '').strip()
+    return jsonify({'identicon': getIdenticonForAccount(name)})
+    
   @app.route('/api/v3/business/register', methods=['POST'])
   def business_register():
 #     try:
@@ -1575,11 +1591,12 @@ if __name__ == '__main__':
 #       signature = bts2helper_sign_compact(to_sign, wif)
 #       tx['signatures'] = [signature]
 #       res = rpc.network_broadcast_transaction_sync(tx)
-
+    
+    print(' ---- register antes de mandar a signar')
     signed_tx = extern_sign_tx(tx, wif)
     res = extern_push_tx(signed_tx['tx'])
     print( json.dumps(res, indent=2))
-
+  
     biz = Business()
     with session_scope() as db:
       biz.email           = email
@@ -1599,6 +1616,7 @@ if __name__ == '__main__':
       for schedule in DiscountSchedule.get_defaults(biz.discount, biz.id):
         db.add(schedule)
       db.commit()
+    print(' ---- register OK!', json.dumps(res['res'] ))
 #       return jsonify({'tx' : tx})
     return jsonify({'ok':'ok', 'res':res['res']})
 
@@ -1644,15 +1662,18 @@ if __name__ == '__main__':
       
 #      '~re:{0}:{1}'.format( bill_amount, bill_id)
 #      '~di:{0}:{1}'.format( bill_amount, bill_id)
+      print(' -- _memo', _memo)
       _memo_split = _memo.split(':')
       bill_id     = '' 
       bill_amount = 0
-      if len(_memo_split)>1:
-        bill_amount = try_float(_memo_split[0])
-        bill_id     = _memo_split[1] 
+      if len(_memo_split)>2:
+        # ~re:1500:the bill
+        bill_amount = Decimal(try_float(_memo_split[1]))
+        bill_id     = _memo_split[2] 
       discount = 0
       if bill_amount>0:
-        discount = round_decimal(Decimal(my_amount*100/bill_amount))
+        print(' -- my_amount', my_amount)
+        discount = round_decimal(Decimal(my_amount)*100/bill_amount)
       return {
         'date'          : block['timestamp'],
         'discount'      : discount,
@@ -1708,11 +1729,13 @@ if __name__ == '__main__':
     url = '/api/v3/sign_tx'
     values = {'tx' : tx,
               'pk' : pk}
+    print(' --- extern_sign_tx', json.dumps(values))
     return extern_call(values, url)
   
   def extern_push_tx(tx):
     url = '/api/v3/push_tx'
     values = {'tx' : tx}
+    print(' --- extern_push_tx', json.dumps(values))
     return extern_call(values, url)
   
   def extern_validate_name(account_name):

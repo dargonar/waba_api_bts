@@ -95,7 +95,7 @@ def on_message(ws, message):
             t = real_name(tos[i]['name'])
             a = amount_value(amounts[i],asset)
             
-            msg = '{0} te ha enviado {1} PAR'.format(f, a)
+            msg = '{0} te ha enviado {1} DSC'.format(f, a)
             print( t, msg)
             send_notification(t, msg)
       
