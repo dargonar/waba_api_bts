@@ -240,14 +240,13 @@ class Business(Base, TimestampMixin):
     print (lat)
     print (lon)
     print (' =============================================================== ')
-    import re
-    lat_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?[0-8]\d((\.)|\.\d{1,6})?)|(0*?90((\.)|\.0{1,6})?))$")
-    lon_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?\d\d((\.)|\.\d{1,6})?)|(0*?1[0-7]\d((\.)|\.\d{1,6})?)|(0*?180((\.)|\.0{1,6})?))$")
-#     pattern = re.compile("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$")
-    if not lat or not is_number(lat) or not lat_patt.match(lat):
-      errors.append({'field':'latitude', 'error':'is_empty_or_not_valid'})
-    if not lon or not is_number(lon) or not lon_patt.match(lon):
-      errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
+#     import re
+#     lat_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?[0-8]\d((\.)|\.\d{1,6})?)|(0*?90((\.)|\.0{1,6})?))$")
+#     lon_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?\d\d((\.)|\.\d{1,6})?)|(0*?1[0-7]\d((\.)|\.\d{1,6})?)|(0*?180((\.)|\.0{1,6})?))$")
+#     if not lat or not is_number(lat) or not lat_patt.match(lat):
+#       errors.append({'field':'latitude', 'error':'is_empty_or_not_valid'})
+#     if not lon or not is_number(lon) or not lon_patt.match(lon):
+#       errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
     
     # ToDo: validate discount & reward
 #     reward    = try_int(dict['reward'])
@@ -388,7 +387,8 @@ class DiscountSchedule(Base, TimestampMixin):
       errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
     
     return errors 
-  # ToDo: obtener min_discount de configuracion 
+  
+  # ToDo: obtener min_discount de configuracion | de categoria ? 
   min_discount      = Decimal(20)
   min_reward        = Decimal(20)
   def from_dict(self, business_id, dict):
@@ -396,7 +396,9 @@ class DiscountSchedule(Base, TimestampMixin):
     self.business_id  = business_id
     self.date         = dict['date']
     self.discount     = dict['discount']
+#     print(' -- Schedule::from_dict() #1')
     if dict['date'] not in DiscountSchedule.valid_dates:
+#       print(' -- Schedule::from_dict() #2')
       raise Exception (u"Not a valid date '{0}'".format(dict['date']))
     if not is_number(dict['discount']) or Decimal(dict['discount'])<DiscountSchedule.min_discount:
       raise Exception (u"Not a valid discount '{0}'. Min discount:{1}".format(dict['date']), DiscountSchedule.min_discount)
