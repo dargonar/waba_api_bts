@@ -110,6 +110,121 @@ class NoDetailOp(graphene.ObjectType):
   class Meta:
     interfaces = (Operation, )
 
+class WithdrawPermissionClaim(graphene.ObjectType):
+
+  amount                      = graphene.Field(lambda:Amount)
+  from_                       = graphene.Field(lambda:Account, name='from')
+  to_                         = graphene.Field(lambda:Account, name='to')
+  withdraw_permission         = graphene.String()
+  
+  def __init__(self, ops):
+    self.ops   = ops
+    print ('WithdrawPermissionClaim *************************** largo %d' % len(ops))
+    print (ops)
+
+    self.main_op = ops[-1].oph['op']
+    # This is the main OP (ops[1])
+    #
+    # [ Transfer,  
+    #   WithdrawPermission ] <==== this 
+    
+    # Determine asset
+    self.asset = self.main_op[1]['amount_to_withdraw']
+    
+    # Determine type
+    # self.otype = 'down' if main_op[0] == 38 else 'up'
+    
+    # Determine id (important for history)
+    self.oph = ops[0].oph
+    self.op  = ops[0].oph['op'][1]
+    
+  class Meta:
+    interfaces = (Operation, )
+  
+  def resolve_from_(self, args, context, info):
+    return Account( cache.get_account(self.main_op[1]['withdraw_from_account']) )
+
+  def resolve_to_(self, args, context, info):
+    return Account( cache.get_account(self.main_op[1]['withdraw_to_account']) )
+  
+  def resolve_amount(self, args, context, info):
+    asset = cache.get_asset(self.asset['asset_id'])
+    return Amount(
+      quantity = amount_value( str(self.asset['amount']), asset),
+      asset    = Asset(asset)
+    )
+  
+  def resolve_withdraw_permission(self, args, context, info):
+    return self.main_op[1]['withdraw_permission']
+  
+  def resolve_ops(self, args, context, info):
+    return self.ops
+
+  
+class WithdrawPermission(graphene.ObjectType):
+
+  amount                      = graphene.Field(lambda:Amount)
+  from_                       = graphene.Field(lambda:Account, name='from')
+  to_                         = graphene.Field(lambda:Account, name='to')
+  withdrawal_period_sec       = graphene.Int()
+  periods_until_expiration    = graphene.Int()
+  period_start_time           = graphene.Int()
+  type_                       = graphene.String(name='type')
+  
+  def __init__(self, ops):
+    self.ops   = ops
+    print ('WithdrawPermission *************************** largo %d' % len(ops))
+    print (ops)
+
+#     main_op = ops[-1 if len(ops)==3 else -2].oph['op']
+    self.main_op = ops[-1].oph['op']
+    # This is the main OP (ops[1])
+    #
+    # [ Transfer,  
+    #   WithdrawPermission ] <==== this 
+    
+    # Determine asset
+    self.asset = self.main_op[1]['withdrawal_limit']
+    
+    # Determine type
+    # self.otype = 'down' if main_op[0] == 38 else 'up'
+    
+    # Determine id (important for history)
+    self.oph = ops[0].oph
+    self.op  = ops[0].oph['op'][1]
+    
+  class Meta:
+    interfaces = (Operation, )
+  
+  def resolve_from_(self, args, context, info):
+    return Account( cache.get_account(self.main_op[1]['withdraw_from_account']) )
+
+  def resolve_to_(self, args, context, info):
+    return Account( cache.get_account(self.main_op[1]['authorized_account']) )
+  
+  def resolve_amount(self, args, context, info):
+    asset = cache.get_asset(self.asset['asset_id'])
+    return Amount(
+      quantity = amount_value( str(self.asset['amount']), asset),
+      asset    = Asset(asset)
+    )
+  
+  def resolve_withdrawal_period_sec(self, args, context, info):
+    return self.main_op[1]['withdrawal_period_sec']
+  
+  def resolve_periods_until_expiration(self, args, context, info):
+    return self.main_op[1]['periods_until_expiration']
+  
+  def resolve_period_start_time(self, args, context, info):
+    return self.main_op[1]['period_start_time']
+  
+  def resolve_type_(self, args, context, info):
+    return 'create' if self.main_op[0]==25 else 'update'
+  
+  def resolve_ops(self, args, context, info):
+    return self.ops
+
+
 class CreditRequest(graphene.ObjectType):
 
   amount = graphene.Field(lambda:Amount)
@@ -378,7 +493,19 @@ templates = [
     (14 , []),
     (14 , []),
     (7  , []),
-  ]
+  ],
+  [ WithdrawPermission,
+    (0  , []),
+    (25 , [])
+  ],
+  [ WithdrawPermission,
+    (0  , []),
+    (26 , [])
+  ],
+  [ WithdrawPermissionClaim,
+    (0  , []),
+    (27 , [])
+  ],
 ]
 
 #@Schema.register
@@ -476,8 +603,7 @@ class Account(graphene.ObjectType):
         return AssetReserve(oph)
         
       elif op[0] == 38:
-        return OverrideTransfer(oph)
-      
+        return OverrideTransfer(oph)  
       else:
         return NoDetailOp(oph)
 
@@ -556,7 +682,9 @@ class Query(graphene.ObjectType):
     if not account_name: raise
 
     print ('ACA ESTYO cache.get_account_id'  )
-    account_id = cache.get_account_id(ACCOUNT_PREFIX + account_name)
+    if not account_name.startswith(ACCOUNT_PREFIX):
+      account_name = ACCOUNT_PREFIX+account_name
+    account_id = cache.get_account_id(account_name)
     print ('OSHE MIRA ', account_id  )
     return Account(cache.get_account(account_id))
 
@@ -570,7 +698,9 @@ theSchema = graphene.Schema(
     OverdraftChange,
     AccountWhitelist, 
     OverrideTransfer,
-    AssetIssue
+    AssetIssue,
+    WithdrawPermission,
+    WithdrawPermissionClaim
   ]
 )
 #print theSchema

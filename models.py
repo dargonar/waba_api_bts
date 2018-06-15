@@ -203,6 +203,7 @@ class Business(Base, TimestampMixin):
   total_discounted  = Column(BigInteger, default=0)
   initial_credit    = Column(BigInteger, default=0)
   discount          = Column(Numeric(5,2), index=True)
+  reward            = Column(Numeric(5,2), index=True)
   image             = Column(String(256))
   location          = Column(String(256))
   latitude          = Column(Numeric(10,8), index=True)
@@ -248,6 +249,12 @@ class Business(Base, TimestampMixin):
     if not lon or not is_number(lon) or not lon_patt.match(lon):
       errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
     
+    # ToDo: validate discount & reward
+#     reward    = try_int(dict['reward'])
+#     discount  = try_int(dict['discount'])
+#     if reward == 0:
+#       reward = discount
+      
     # ToDo:
     # Validate telephone, email and address
 #     dict['location']
@@ -329,6 +336,7 @@ class Business(Base, TimestampMixin):
 #     self.total_discounted = dict['total_discounted']
 #     self.initial_credit   = Decimal(dict['initial_credit'])
     self.discount         = Decimal(dict['discount'])
+    self.reward           = Decimal(dict['reward']) if 'reward' in dict else self.discount
     self.image            = dict['image']
     self.location         = dict['location']
     self.latitude         = Decimal(dict['latitude'])
@@ -351,7 +359,7 @@ class DiscountSchedule(Base, TimestampMixin):
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   
   @staticmethod
-  def get_defaults(discount, biz_id):
+  def get_defaults(discount, reward, biz_id):
     schedules = []
     my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
     for valid_date in my_valid_dates:
@@ -359,12 +367,13 @@ class DiscountSchedule(Base, TimestampMixin):
       sche.business_id  = biz_id
       sche.date         = valid_date
       sche.discount     = discount
+      sche.reward       = reward
       schedules.append(sche)
 #       schedules.append(sche.to_dict())
     return schedules
   
   @staticmethod
-  def validate_schedule(schedule_array, min_discount):
+  def validate_schedule(schedule_array, min_discount, min_reward):
     import copy
     errors          = []
     my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
@@ -372,13 +381,16 @@ class DiscountSchedule(Base, TimestampMixin):
       if schedule['date'] in my_valid_dates:
         my_valid_dates.remove(schedule['date'])
       if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
-        errors.append({'field':'discount_schedule', 'error': '{0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
+        errors.append({'field':'discount_schedule', 'error': 'Discount {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
+      if Decimal(schedule['reward'])>100 or Decimal(schedule['reward'])<min_reward:
+        errors.append({'field':'discount_schedule', 'error': 'Reward {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_reward, 100) })
     if len(my_valid_dates)>0:
       errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
     
     return errors 
   # ToDo: obtener min_discount de configuracion 
   min_discount      = Decimal(20)
+  min_reward        = Decimal(20)
   def from_dict(self, business_id, dict):
     
     self.business_id  = business_id
@@ -388,11 +400,14 @@ class DiscountSchedule(Base, TimestampMixin):
       raise Exception (u"Not a valid date '{0}'".format(dict['date']))
     if not is_number(dict['discount']) or Decimal(dict['discount'])<DiscountSchedule.min_discount:
       raise Exception (u"Not a valid discount '{0}'. Min discount:{1}".format(dict['date']), DiscountSchedule.min_discount)
+    if not is_number(dict['reward']) or Decimal(dict['reward'])<DiscountSchedule.min_reward:
+      raise Exception (u"Not a valid reward '{0}'. Min reward:{1}".format(dict['date']), DiscountSchedule.min_reward)
       
   def to_dict(self):
     return {
       'id' : self.id,
       'business_id' : self.business_id,
-      'date' : self.date,
-      'discount' : self.discount
+      'date'        : self.date,
+      'discount'    : self.discount,
+      'reward'      : self.reward
     }

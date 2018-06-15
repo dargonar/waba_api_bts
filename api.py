@@ -26,7 +26,7 @@ from ops_func import *
 from bts2helper import *
 import simplejson as json
 from graphql.execution.executors.gevent import GeventExecutor
-# from graphql.execution.executors.thread import ThreadExecutor
+from graphql.execution.executors.thread import ThreadExecutor
 
 #ACCOUNT_PREFIX = '' 
 from memcache import Client
@@ -116,7 +116,8 @@ def create_app(**kwargs):
   return app
 
 if __name__ == '__main__':
-  app = create_app(executor=GeventExecutor(), graphiql=True)
+#   app = create_app(executor=GeventExecutor(), graphiql=True)
+  app = create_app(executor=ThreadExecutor(), graphiql=True)
   
   @app.errorhandler(Exception)
   def unhandled_exception(e):
@@ -693,13 +694,13 @@ if __name__ == '__main__':
     # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.27", "to" : "1.2.19", "amount" : 500, "bill_amount" : 2000, "bill_id" : "this_is_a_bill_id"}' http://35.163.59.126:8080/api/v3/business/subaccount/refund/create  
     business_id     = request.json.get('business_id')
     subaccount_id   = request.json.get('subaccount_id')
-    tx = withdraw_daily_amount_impl(business_id, subaccount_id)
+    tx              = withdraw_daily_amount_impl(business_id, subaccount_id)
     return jsonify( {'tx':tx} )
   
   def withdraw_daily_amount_impl(business_id, subaccount_id):
     res = rpc.db_get_withdraw_permissions_by_recipient(subaccount_id, '1.12.0', 100) 
     the_perm = None
-    for perm in perms:
+    for perm in res:
       if perm["withdraw_from_account"] == business_id and perm["expiration"] > datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["period_start_time"] <= datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["withdrawal_limit"]["asset_id"]==DISCOIN_ID:
         the_perm = perm
         break
@@ -725,11 +726,11 @@ if __name__ == '__main__':
       [_transfer[0]] + [withdraw_permission_claim_op[0]]
     , None)
 
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
-    
-    tx['signatures'] = [signature]
-    return tx
+#     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+#     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+#     tx['signatures'] = [signature]
+#     return tx
+    return extern_sign_tx(tx, REGISTER_PRIVKEY)['tx']
   
   
   @app.route('/api/v3/refund/create', methods=['POST'])
@@ -1325,13 +1326,17 @@ if __name__ == '__main__':
     
     print( ' ========================== Find Account by PubKey')
     key  = request.json.get('key')
-    account_ids = set(rpc.db_get_key_references([key])[0])
+    account_ids = list(set(rpc.db_get_key_references([key])[0]))
     print (' == account_ids : ')
     print (account_ids)
-    res = [real_name(a['name']) for a in rpc.db_get_accounts(list(account_ids))]
+    names = [real_name(a['name']) for a in rpc.db_get_accounts(account_ids)]
+    res = []
+    if len(account_ids)>0 and len(names)>0:
+      res.append(names[0])
+      res.append(account_ids[0])
     print (' == res : ')
     print (json.dumps(res) )
-    return jsonify({"res" : res})
+    return jsonify(res)
 
   @app.route('/api/v3/account/by_name/<account>', methods=['GET'])
   def get_account(account):
@@ -1359,6 +1364,58 @@ if __name__ == '__main__':
     obj = rpc.db_get_account_by_name(account)
     return (obj, account)
     
+  
+  @app.route('/api/v3/account/search2', methods=['GET'])
+  def search_account2():
+    # OLD searchAccount
+    search = request.args.get('search', '')
+    search_filter = try_int(request.args.get('search_filter',0))
+    
+    if search=='*':
+      search=''
+    
+    # --------------------------------------------------- #
+    # search_filter:
+    #   0 = ALL
+    #   1 = NO_CREDIT && NO_BLACK
+    #   2 = HAS_CREDIT
+    # --------------------------------------------------- #
+    
+    res = []
+    for tmp in rpc.db_lookup_accounts(ACCOUNT_PREFIX + search, 10):
+      if tmp[0].startswith(ACCOUNT_PREFIX):
+        tmp[0] = tmp[0][len(ACCOUNT_PREFIX):]
+
+        #print tmp[0], search
+        if tmp[0].startswith(search):
+          
+          add_account = True
+#           print( '=== Account: ')
+#           print (tmp[0])
+          # Only with no-credit and no black-listed
+          if search_filter == 1:
+            p = rpc.db_get_account_balances(tmp[1], [DISCOIN_CREDIT_ID])
+#             print( '=== Overdraft: ')
+#             print (p[0]['amount'])
+            no_credit = p[0]['amount'] == 0
+            no_black = tmp[1] not in rpc.db_get_accounts([DISCOIN_ADMIN_ID])[0]['blacklisted_accounts']
+            add_account = no_credit and no_black
+          
+          # Only with credit
+          if search_filter == 2:
+            p = rpc.db_get_account_balances(tmp[1], [DISCOIN_CREDIT_ID])
+            has_credit = p[0]['amount'] > 0
+            #no_black = tmp[1] not in rpc.db_get_accounts([PROPUESTA_PAR_ID])[0]['blacklisted_accounts']
+            add_account = has_credit
+          if add_account:
+            item = []
+            item.append(ACCOUNT_PREFIX + tmp[0]) 
+            item.append(tmp[1])
+            item.append(getIdenticonForAccount(item[0]))
+            res.append( item )
+    print (json.dumps(res))
+    return jsonify( {'res' : res} )
+  
   
   @app.route('/api/v3/account/search', methods=['GET'])
   def search_account():
@@ -1408,7 +1465,8 @@ if __name__ == '__main__':
             res.append( tmp )
     print (json.dumps(res))
     return jsonify( {'res' : res} )
-
+  
+  
   @app.route('/api/v3/account/register', methods=['POST'])
   def account_register():
     # register_account name, owner_pubkey, active_pubkey, registrar_account, referrer_account, referrer_percent, broadcast
@@ -1604,7 +1662,8 @@ if __name__ == '__main__':
       biz.telephone       = telephone
       biz.account         = account_name
       biz.description     = name
-      biz.discount        = Decimal(10)
+      biz.discount        = Decimal(10) # ToDo: traer de categoria
+      biz.reward          = Decimal(10) # ToDo: traer de categoria
       biz.category_id     = category_id
       biz.subcategory_id  = subcategory_id
 #         _id = cache.get_account_id( unicode(account_name) )
@@ -1613,7 +1672,7 @@ if __name__ == '__main__':
       db.add(biz)
       db.flush()
       db.refresh(biz)
-      for schedule in DiscountSchedule.get_defaults(biz.discount, biz.id):
+      for schedule in DiscountSchedule.get_defaults(biz.discount, biz.reward, biz.id):
         db.add(schedule)
       db.commit()
     print(' ---- register OK!', json.dumps(res['res'] ))
@@ -1767,5 +1826,5 @@ if __name__ == '__main__':
   def not_found(error):
     return make_response(jsonify({'error': 'not_found'}), 404)
   app.config['JSON_AS_ASCII'] = False
-  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",8089)), threaded=True)
+  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",8088)), threaded=True)
   
