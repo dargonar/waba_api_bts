@@ -380,7 +380,7 @@ if __name__ == '__main__':
 #       owner           = str( biz_json.get('owner', '') )
 #       active          = str( biz_json.get('active', '') )
 #       memo            = str( biz_json.get('memo', '') )
-
+#     print ( json.dumps(biz_json))
     with session_scope() as db:
       biz = db.query(Business).filter(Business.account_id==account_id).first()
       if not biz:
@@ -397,6 +397,7 @@ if __name__ == '__main__':
       for schedule in biz_json.get('discount_schedule', []):
         dis_sche = DiscountSchedule()
         try:
+#           print('--schedule:', schedule)
           dis_sche.from_dict(biz.id, schedule)
         except Exception as e:
           errors.append({'field':'discount_schedule', 'error':str(e)})
@@ -406,7 +407,6 @@ if __name__ == '__main__':
         return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
       db.commit()
 
-#       return jsonify({'tx' : tx})
     return jsonify({'ok':'ok'})
 
   @app.route('/api/v3/dashboard/business/schedule/<account_id>/update', methods=['GET', 'POST'])
@@ -697,13 +697,19 @@ if __name__ == '__main__':
     return jsonify( {'tx':tx} )
   
   def withdraw_daily_amount_impl(business_id, subaccount_id):
-    res = rpc.db_get_withdraw_permissions_by_recipient(subaccount_id, '1.12.0', 100) 
+    perms = rpc.db_get_withdraw_permissions_by_recipient(subaccount_id, '1.12.0', 100) 
     the_perm = None
     for perm in perms:
+      print(' -- withdraw_daily_amount::perm', json.dumps(perm))
+      print (perm["withdraw_from_account"] ,'==', business_id )
+      print (perm["expiration"] ,'>', datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
+      print (perm["period_start_time"] , '<=' , datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
+      print (perm["withdrawal_limit"]["asset_id"], '==', DISCOIN_ID)
       if perm["withdraw_from_account"] == business_id and perm["expiration"] > datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["period_start_time"] <= datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["withdrawal_limit"]["asset_id"]==DISCOIN_ID:
         the_perm = perm
         break
     
+    print(' -- withdraw_daily_amount::the_perm', json.dumps(the_perm))
     if not the_perm:
       return None
     
@@ -725,11 +731,11 @@ if __name__ == '__main__':
       [_transfer[0]] + [withdraw_permission_claim_op[0]]
     , None)
 
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
-    
-    tx['signatures'] = [signature]
-    return tx
+#     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+#     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
+#     tx['signatures'] = [signature]
+#     return tx
+    return extern_sign_tx(tx, REGISTER_PRIVKEY)['tx']
   
   
   @app.route('/api/v3/refund/create', methods=['POST'])
