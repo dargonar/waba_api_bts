@@ -352,7 +352,7 @@ class DiscountSchedule(Base, TimestampMixin):
   business_id       = Column(Integer, ForeignKey('business.id'))
   date              = Column(String(32), index=True)
   discount          = Column(Numeric(5,2), index=True)
-  
+  reward            = Column(Numeric(5,2), index=True)
   business          = relationship("Business", back_populates="discount_schedule")
   
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
