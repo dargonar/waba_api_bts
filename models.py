@@ -271,8 +271,8 @@ class Business(Base, TimestampMixin):
     self.subcategory_id     = int(dict['subcategory_id'])
     self.image              = dict['image']
     self.location           = dict['location']
-    self.latitude           = Decimal(dict['latitude'])
-    self.longitude          = Decimal(dict['longitude'])
+    self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
+    self.longitude          = Decimal(dict['longitude']) if dict['longitude'] else Decimal(0)
     self.address            = dict['address']
     self.email              = dict['email']
     self.telephone          = dict['telephone']
