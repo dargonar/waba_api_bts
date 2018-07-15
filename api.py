@@ -365,8 +365,6 @@ if __name__ == '__main__':
   
   @app.route('/api/v3/dashboard/business/profile/<account_id>/update', methods=['GET', 'POST'])
   def dashboard_update_business_profile(account_id):
-    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": null,    "location": null,    "longitude": null,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
-    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": -22.36,    "location": null,    "longitude": -33.36,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
     
     #ToDo: Validar el secret!!!!
     # por business y por admin
@@ -395,12 +393,14 @@ if __name__ == '__main__':
       biz.discount_schedule[:] = []
       biz.from_dict_for_update(biz_json)
       db.add(biz)
+#       print (' -- biz.category:', biz.category.discount)
       for schedule in biz_json.get('discount_schedule', []):
         dis_sche = DiscountSchedule()
         try:
-#           print('--schedule:', schedule)
-          dis_sche.from_dict(biz.id, schedule)
+          print('--schedule: QuE VINO?', schedule)
+          dis_sche.from_dict(biz.id, schedule, biz.category.discount)
         except Exception as e:
+          print('--schedule: HAY ERROR!!', str(e))
           errors.append({'field':'discount_schedule', 'error':str(e)})
         db.add(dis_sche)
       if len(errors)>0:
@@ -442,9 +442,11 @@ if __name__ == '__main__':
       db.add(biz)
       for schedule in biz_schedule_json:
         dis_sche = DiscountSchedule()
+        print( json.dumps(schedule, indent=2)) 
         try:
           dis_sche.from_dict(biz.id, schedule)
         except Exception as e:
+          print( ' ---- SII, error!', str(e)) 
           errors.append({'field':'discount_schedule', 'error':str(e)})
         db.add(dis_sche)
       if len(errors)>0:
@@ -633,16 +635,18 @@ if __name__ == '__main__':
         None,
         CORE_ASSET
     )
-    print( ' == transfer: ')
-    print (_transfer)
+#     print( ' == transfer: ')
+#     print (_transfer)
     
     
 #     _transfer +
+#     [_transfer[0]]\
+    print (' ---------- ABOUT TO  build_tx_and_broadcast')
     tx = build_tx_and_broadcast(
-      [_transfer[0]] + [withdraw_permission_op[0]] 
+      _transfer + [withdraw_permission_op[0]] 
     , None)
     
-#     print (' ---------- ADD SUBACCOUNT', json.dumps(tx))
+    print (' ---------- ADD SUBACCOUNT', json.dumps(tx))
     return extern_sign_tx(tx, REGISTER_PRIVKEY)['tx']
 #     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
 #     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
@@ -702,14 +706,15 @@ if __name__ == '__main__':
     the_perm = None
     for perm in perms:
       print(' -- withdraw_daily_amount::perm', json.dumps(perm))
-      print (perm["withdraw_from_account"] ,'==', business_id )
-      print (perm["expiration"] ,'>', datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
-      print (perm["period_start_time"] , '<=' , datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
-      print (perm["withdrawal_limit"]["asset_id"], '==', DISCOIN_ID)
+      print (' --- withdraw_from_account:', perm["withdraw_from_account"] ,'==', business_id )
+      print (' --- expiration:', perm["expiration"] ,'>', datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
+      print (' --- period_start_time:', perm["period_start_time"] , '<=' , datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') )
+      print (' --- withdrawal_limit:', perm["withdrawal_limit"]["asset_id"], '==', DISCOIN_ID)
       if perm["withdraw_from_account"] == business_id and perm["expiration"] > datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["period_start_time"] <= datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') and perm["withdrawal_limit"]["asset_id"]==DISCOIN_ID:
         the_perm = perm
         break
-    
+      else:
+        print(' -- withdraw_daily_amount::perm NOT VALID', json.dumps(perm))  
     print(' -- withdraw_daily_amount::the_perm', json.dumps(the_perm))
     if not the_perm:
       return None

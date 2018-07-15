@@ -271,8 +271,8 @@ class Business(Base, TimestampMixin):
     self.subcategory_id     = int(dict['subcategory_id'])
     self.image              = dict['image']
     self.location           = dict['location']
-    self.latitude           = Decimal(dict['latitude'])
-    self.longitude          = Decimal(dict['longitude'])
+    self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
+    self.longitude          = Decimal(dict['longitude']) if dict['longitude'] else Decimal(0)
     self.address            = dict['address']
     self.email              = dict['email']
     self.telephone          = dict['telephone']
@@ -372,39 +372,40 @@ class DiscountSchedule(Base, TimestampMixin):
     return schedules
   
   @staticmethod
-  def validate_schedule(schedule_array, min_discount, min_reward):
+  def validate_schedule(schedule_array, min_discount):
     import copy
     errors          = []
-    my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
-    for schedule in schedule_array:
-      if schedule['date'] in my_valid_dates:
-        my_valid_dates.remove(schedule['date'])
-      if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
-        errors.append({'field':'discount_schedule', 'error': 'Discount {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
-      if Decimal(schedule['reward'])>100 or Decimal(schedule['reward'])<min_reward:
-        errors.append({'field':'discount_schedule', 'error': 'Reward {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_reward, 100) })
-    if len(my_valid_dates)>0:
-      errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
+#     my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
+#     for schedule in schedule_array:
+#       if schedule['date'] in my_valid_dates:
+#         my_valid_dates.remove(schedule['date'])
+#       if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
+#         errors.append({'field':'discount_schedule', 'error': 'Discount {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
+#       if Decimal(schedule['reward'])>100 or Decimal(schedule['reward'])<min_discount:
+#         errors.append({'field':'discount_schedule', 'error': 'Reward {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_reward, 100) })
+#     if len(my_valid_dates)>0:
+#       errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
     
     return errors 
   
-  # ToDo: obtener min_discount de configuracion | de categoria ? 
-  min_discount      = Decimal(20)
-  min_reward        = Decimal(20)
-  def from_dict(self, business_id, dict):
+ 
+  def from_dict(self, business_id, dict, min_disc):
     
     self.business_id  = business_id
     self.date         = dict['date']
     self.discount     = dict['discount']
-#     print(' -- Schedule::from_dict() #1')
+    self.reward       = dict['reward']
+    print(' -- Schedule::from_dict() #1')
     if dict['date'] not in DiscountSchedule.valid_dates:
-#       print(' -- Schedule::from_dict() #2')
-      raise Exception (u"Not a valid date '{0}'".format(dict['date']))
-    if not is_number(dict['discount']) or Decimal(dict['discount'])<DiscountSchedule.min_discount:
-      raise Exception (u"Not a valid discount '{0}'. Min discount:{1}".format(dict['date']), DiscountSchedule.min_discount)
-    if not is_number(dict['reward']) or Decimal(dict['reward'])<DiscountSchedule.min_reward:
-      raise Exception (u"Not a valid reward '{0}'. Min reward:{1}".format(dict['date']), DiscountSchedule.min_reward)
-      
+      print(' -- Schedule::from_dict() #2')
+      raise Exception (u"Día '{0}' no válido".format(dict['date']))
+    if not is_number(self.discount) or Decimal(self.discount)<min_disc or Decimal(self.discount)>100: #DiscountSchedule.min_discount:
+      raise Exception (u"Descuento '{0}'% no válido . Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
+    print(' -- Schedule::from_dict() #4')
+    if not is_number(self.reward) or Decimal(self.reward)<min_disc or Decimal(self.reward)>100: #DiscountSchedule.min_reward:
+      raise Exception (u"Recompensa '{0}'% no válida. Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
+    print(' -- Schedule::from_dict() #5')
+    
   def to_dict(self):
     return {
       'id' : self.id,
