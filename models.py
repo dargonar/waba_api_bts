@@ -186,6 +186,14 @@ class Category(Base, TimestampMixin):
       'parent_id'   : 0 if zero_if_parent_id_null and self.parent_id==None else self.parent_id,
       'discount'    : self.discount
     }
+  
+  def from_dict(self, dict):
+    self.name         = dict['name']
+    self.description  = dict['description']
+    if try_int(dict['parent_id']) >0:
+      self.parent_id    = try_int(dict['parent_id']) 
+    self.discount     = dict['discount']
+    
 
 class Business(Base, TimestampMixin):
   __tablename__     = 'business'
@@ -269,7 +277,9 @@ class Business(Base, TimestampMixin):
     self.description        = dict['description']
     self.category_id        = int(dict['category_id'])
     self.subcategory_id     = int(dict['subcategory_id'])
-    self.image              = dict['image']
+    if dict['image']:
+      print( ' ----- updating-biz-image',  dict['image'])
+      self.image              = dict['image']
     self.location           = dict['location']
     self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
     self.longitude          = Decimal(dict['longitude']) if dict['longitude'] else Decimal(0)

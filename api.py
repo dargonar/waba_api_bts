@@ -393,12 +393,12 @@ if __name__ == '__main__':
       biz.discount_schedule[:] = []
       biz.from_dict_for_update(biz_json)
       db.add(biz)
-#       print (' -- biz.category:', biz.category.discount)
+      print (' -- biz.category', biz.category.discount)
       for schedule in biz_json.get('discount_schedule', []):
         dis_sche = DiscountSchedule()
         try:
           print('--schedule: QuE VINO?', schedule)
-          dis_sche.from_dict(biz.id, schedule, biz.category.discount)
+          dis_sche.from_dict(biz.id, schedule)
         except Exception as e:
           print('--schedule: HAY ERROR!!', str(e))
           errors.append({'field':'discount_schedule', 'error':str(e)})
@@ -1225,15 +1225,50 @@ if __name__ == '__main__':
       return jsonify( {'categories' : [ c.to_dict(zero_if_parent_id_null=True) for c in q.all()] } )
       
   #ToDo:
-  @app.route('/api/v3/business/category/add_update', methods=['POST'])
+  @app.route('/api/v3/business/category/add_or_update', methods=['POST'])
   def dashboard_category_add_update():
-    pass
+    cat  = request.json.get('category')
+#     a = {
+#       'id'          : 
+#       'name'        : 
+#       'description' : 
+#       'parent_id'   : 
+
+#       'discount'    : 
+#     }
+    
+#     if cat['id'] and is_number(cat['id']):
+    cat_id = 0
+    if 'id' in cat and is_number(cat['id']):
+      cat_id = try_int(cat['id'])  
+#     db_cat = None
+    with session_scope() as db:
+      db_cat = Category()
+      if cat_id>0:
+        db_cat, is_new = get_or_create(db, Category, id  = cat_id)
+      db_cat.from_dict(cat)
+      db.add(db_cat)
+      db.flush()
+      cat_dict = db_cat.to_dict()
+#       db.refresh(db_cat)
+      db.commit()
+#       db.expunge(db_cat)
+      return jsonify( {'ok':'ok', 'category' : cat_dict } )
   
-  #ToDo:
   @app.route('/api/v3/business/category/delete', methods=['POST'])
   def dashboard_category_delete():
-    pass
-  
+    cat_id  = request.json.get('id')
+    if not cat_id or not is_number(cat_id):
+      return jsonify( {'error':'id_not_a_number'})
+    with session_scope() as db:
+      try:
+        db.query(Category).filter(Category.id == cat_id).delete(synchronize_session=False)
+      except Exception as e:
+        db.rollback()
+        return jsonify( {'error':str(e)})
+      db.commit()
+    return jsonify( {'ok':'ok'})
+    
   @app.route('/api/v3/business/category', methods=['GET'])
   def business_category():
     # http://35.163.59.126:8080/api/v3/business/category?search=&cat_level=-1
