@@ -29,6 +29,8 @@ using namespace boost;
 using namespace graphene::chain;
 using namespace graphene::utilities;
 
+#define MAX_JSON_DEPTH 1000
+
 std::string bts2helper_memo_encode(const std::string& priv, const std::string& pub, const std::string& message) {
 
   auto priv_key = fc::ecc::private_key::regenerate( fc::sha256(priv) );
@@ -94,7 +96,7 @@ std::string bts2helper_recover_pubkey(const std::string& signature, const std::s
 
 std::string bts2helper_tx_id(const std::string& tx_json) {
 
-  auto tx     = fc::json::from_string(tx_json).as<transaction>();
+  auto tx     = fc::json::from_string(tx_json).as<transaction>(MAX_JSON_DEPTH);
   auto txid   = tx.id();
   auto data   = fc::raw::pack(txid);
 
@@ -103,7 +105,7 @@ std::string bts2helper_tx_id(const std::string& tx_json) {
 
 std::string bts2helper_tx_digest(const std::string& tx_json, const std::string& chain_id) {
 
-  auto tx     = fc::json::from_string(tx_json).as<transaction>();
+  auto tx     = fc::json::from_string(tx_json).as<transaction>(MAX_JSON_DEPTH);
   auto digest = tx.sig_digest(fc::sha256(chain_id));
   auto data   = fc::raw::pack(digest);
 
@@ -123,7 +125,7 @@ uint32_t bts2helper_ref_block_prefix(const std::string& block_id)
 
 std::string bts2helper_block_id(const std::string& signed_block_header_json) {
 
-  auto block_header = fc::json::from_string(signed_block_header_json).as<signed_block_header>();
+  auto block_header = fc::json::from_string(signed_block_header_json).as<signed_block_header>(MAX_JSON_DEPTH);
   auto id           = block_header.id();
   auto data         = fc::raw::pack(id);
 
@@ -132,7 +134,7 @@ std::string bts2helper_block_id(const std::string& signed_block_header_json) {
 
 std::string bts2helper_tx_id(std::string tx_json) {
 
-  auto tx   = fc::json::from_string(tx_json).as<transaction>();
+  auto tx   = fc::json::from_string(tx_json).as<transaction>(MAX_JSON_DEPTH);
   auto id   = tx.id();
   auto data = fc::raw::pack(id);
 
