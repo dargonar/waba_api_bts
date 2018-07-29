@@ -18,7 +18,7 @@ from models import *
 from ops_func import *
 
 from bts2helper import *
-from credit_func import set_overdraft #, multisig_set_overdraft
+from credit_func import set_overdraft, issue_reserve_fund #, multisig_set_overdraft
 
 valid_assets = [DISCOIN_ACCESS_ID]
 
@@ -91,8 +91,27 @@ def user_applies_authorization(t):
   # HACK : poner las privadas en orden y los owner de los assets
 #   multisig_set_overdraft(accounts_to_issue)
   print "apply auth => about to apply overdraft"
-  set_overdraft(accounts_to_issue)
+  ret = set_overdraft(accounts_to_issue)
+#   print '**************************************'
+#   print 'ret = set_overdraft(accounts_to_issue)'
+#   print json.dumps(ret)
+  
+  # Validar que la TX llego a destino :(
+  # accounts_to_issue
+  # {"discoin.business2": 55000}
+  # t.from_name  : amount
+  with session_scope() as db:
+    biz = db.query(Business).filter(Business.account==t.from_name).first()
+    if not biz:
+      print ' NO hay business ' + t.from_name
+      return
+    biz_credit = BusinessCredit.from_process(biz.id, amount)
+    db.add(biz_credit)
+    db.commit()
+    print ' Business Credit salvado ' + t.from_name
+    
 
+    
 def user_transfer_authorizations(t):
   
   to            = t.memo[8:].decode('hex')
@@ -126,6 +145,42 @@ def user_transfer_authorizations(t):
   p = rpc.network_broadcast_transaction(tx)
   return to_sign
 
+def system_issue_credit(business_credit, reserve_fund):
+#   issue_reserve_fund(business_credit.business.account, business_credit.amount)
+  amount = business_credit.amount*reserve_fund/100
+  print ' **** '
+  print 'system_issue_credit'
+  print DISCOIN_ADMIN_NAME
+  print amount
+  issue_reserve_fund(DISCOIN_ADMIN_NAME, amount)
+  print ' ** issued!'
+  
+def do_process_2():
+  try:
+    with session_scope() as db:
+      q_conf, is_new  = get_or_create(db, NameValue, name  = 'configuration')
+      
+#       q_conf.airdrop.by_wallet.reward_amount
+#       q_conf.airdrop.by_wallet.first_wallet_download
+#       q_conf.airdrop.by_wallet.first_tx_reward_amount
+#       print json.dumps(q_conf.value)
+      reserve_fund = q_conf.value['reserve_fund']['new_business_percent']
+#       print ' ** '
+#       print reserve_fund
+#       return
+      q = db.query(BusinessCredit)
+      q = q.filter(BusinessCredit.processed == 0)
+      q = q.order_by(BusinessCredit.id)
+      q = q.limit(10)
+      for t in q.all():
+        system_issue_credit(t, reserve_fund)
+        t.processed = 1
+        db.commit()
+
+  except Exception as ex:
+    print ex
+    logging.error(traceback.format_exc())
+    
 def do_process():
   try:
     
@@ -198,6 +253,8 @@ if __name__ == "__main__":
   while True:
     try:
       do_process()
+      sleep(3)
+      do_process_2()
       sleep(3)
     except Exception as ex:
       logging.error(traceback.format_exc())

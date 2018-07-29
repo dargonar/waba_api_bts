@@ -14,7 +14,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
 from sqlalchemy.sql import select, exists
 from sqlalchemy.pool import NullPool
-
+import copy
 from utils import *
 
 class CoerceToInt(TypeDecorator):
@@ -176,14 +176,24 @@ class Category(Base, TimestampMixin):
   name         = Column(String(256), index=True)
   description  = Column(String(256), index=True)
   parent_id    = Column(Integer, index=True)
+  discount     = Column(Numeric(5,2), index=True)
   
-  def to_dict(self):
+  def to_dict(self, zero_if_parent_id_null=False):
     return {
       'id'          : self.id,
       'name'        : self.name,
       'description' : self.description,
-      'parent_id'   : self.parent_id
+      'parent_id'   : 0 if zero_if_parent_id_null and self.parent_id==None else self.parent_id,
+      'discount'    : self.discount
     }
+  
+  def from_dict(self, dict):
+    self.name         = dict['name']
+    self.description  = dict['description']
+    if try_int(dict['parent_id']) >0:
+      self.parent_id    = try_int(dict['parent_id']) 
+    self.discount     = dict['discount']
+    
 
 class Business(Base, TimestampMixin):
   __tablename__     = 'business'
@@ -201,7 +211,8 @@ class Business(Base, TimestampMixin):
   total_discounted  = Column(BigInteger, default=0)
   initial_credit    = Column(BigInteger, default=0)
   discount          = Column(Numeric(5,2), index=True)
-  image             = Column(String(256))
+  reward            = Column(Numeric(5,2), index=True)
+  image             = Column(Text)
   location          = Column(String(256))
   latitude          = Column(Numeric(10,8), index=True)
   longitude         = Column(Numeric(11,8), index=True)
@@ -210,9 +221,10 @@ class Business(Base, TimestampMixin):
   email             = Column(String(256), index=True)
   telephone         = Column(String(256), index=True)
   
-  category = relationship('Category', foreign_keys=category_id)
-  subcategory = relationship('Category', foreign_keys=subcategory_id)
+  category          = relationship('Category', foreign_keys=category_id)
+  subcategory       = relationship('Category', foreign_keys=subcategory_id)
   discount_schedule = relationship("DiscountSchedule", back_populates="business")
+  business_credit   = relationship("BusinessCredit", back_populates="business")
   
 #   billing_address_id = Column(Integer, ForeignKey("address.id"))
 #   billing_address = relationship("Address", foreign_keys=[billing_address_id])
@@ -232,20 +244,25 @@ class Business(Base, TimestampMixin):
 #     dict['image']
     lat = str(dict['latitude'])
     lon = str(dict['longitude'])
-    print ' =============================================================== '
-    print ' ===================== Business::validate_dict()'
-    print lat
-    print lon
-    print ' =============================================================== '
-    import re
-    lat_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?[0-8]\d((\.)|\.\d{1,6})?)|(0*?90((\.)|\.0{1,6})?))$")
-    lon_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?\d\d((\.)|\.\d{1,6})?)|(0*?1[0-7]\d((\.)|\.\d{1,6})?)|(0*?180((\.)|\.0{1,6})?))$")
-#     pattern = re.compile("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$")
-    if not lat or not is_number(lat) or not lat_patt.match(lat):
-      errors.append({'field':'latitude', 'error':'is_empty_or_not_valid'})
-    if not lon or not is_number(lon) or not lon_patt.match(lon):
-      errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
+    print (' =============================================================== ')
+    print (' ===================== Business::validate_dict()')
+    print (lat)
+    print (lon)
+    print (' =============================================================== ')
+#     import re
+#     lat_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?[0-8]\d((\.)|\.\d{1,6})?)|(0*?90((\.)|\.0{1,6})?))$")
+#     lon_patt = re.compile("^(\+|-)?((\d((\.)|\.\d{1,6})?)|(0*?\d\d((\.)|\.\d{1,6})?)|(0*?1[0-7]\d((\.)|\.\d{1,6})?)|(0*?180((\.)|\.0{1,6})?))$")
+#     if not lat or not is_number(lat) or not lat_patt.match(lat):
+#       errors.append({'field':'latitude', 'error':'is_empty_or_not_valid'})
+#     if not lon or not is_number(lon) or not lon_patt.match(lon):
+#       errors.append({'field':'longitude', 'error':'is_empty_or_not_valid'})
     
+    # ToDo: validate discount & reward
+#     reward    = try_int(dict['reward'])
+#     discount  = try_int(dict['discount'])
+#     if reward == 0:
+#       reward = discount
+      
     # ToDo:
     # Validate telephone, email and address
 #     dict['location']
@@ -261,10 +278,12 @@ class Business(Base, TimestampMixin):
     self.description        = dict['description']
     self.category_id        = int(dict['category_id'])
     self.subcategory_id     = int(dict['subcategory_id'])
-    self.image              = dict['image']
+    if dict['image']:
+      print( ' ----- updating-biz-image',  dict['image'])
+      self.image              = dict['image']
     self.location           = dict['location']
-    self.latitude           = Decimal(dict['latitude'])
-    self.longitude          = Decimal(dict['longitude'])
+    self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
+    self.longitude          = Decimal(dict['longitude']) if dict['longitude'] else Decimal(0)
     self.address            = dict['address']
     self.email              = dict['email']
     self.telephone          = dict['telephone']
@@ -327,6 +346,7 @@ class Business(Base, TimestampMixin):
 #     self.total_discounted = dict['total_discounted']
 #     self.initial_credit   = Decimal(dict['initial_credit'])
     self.discount         = Decimal(dict['discount'])
+    self.reward           = Decimal(dict['reward']) if 'reward' in dict else self.discount
     self.image            = dict['image']
     self.location         = dict['location']
     self.latitude         = Decimal(dict['latitude'])
@@ -335,7 +355,26 @@ class Business(Base, TimestampMixin):
     self.email            = dict['email']
     self.telephone        = dict['telephone']
     
+
+class BusinessCredit(Base, TimestampMixin):
+  __tablename__     = 'business_credit'
+  id                = Column(Integer, primary_key=True)
+  business_id       = Column(Integer, ForeignKey('business.id'))
+  block_num         = Column(Integer)
+  trx_in_block      = Column(Integer)
+  op_in_trx         = Column(Integer)
+  txid              = Column(String(64), index=True)
+  processed         = Column(Integer, default=0, index=True)
+  amount            = Column(Integer)
+  business          = relationship("Business", back_populates="business_credit")
   
+  @staticmethod
+  def from_process(business_id, amount):
+    biz_credit = BusinessCredit()
+    biz_credit.business_id = business_id
+    biz_credit.amount      = amount
+    return biz_credit
+    
 class DiscountSchedule(Base, TimestampMixin):
   __tablename__     = 'discount_schedule'
   id                = Column(Integer, primary_key=True)
@@ -343,52 +382,65 @@ class DiscountSchedule(Base, TimestampMixin):
   business_id       = Column(Integer, ForeignKey('business.id'))
   date              = Column(String(32), index=True)
   discount          = Column(Numeric(5,2), index=True)
-  
+  reward            = Column(Numeric(5,2), index=True)
   business          = relationship("Business", back_populates="discount_schedule")
   
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   
   @staticmethod
-  def get_default(discount, biz_id):
+  def get_defaults(discount, reward, biz_id):
     schedules = []
-    for valid_date in valid_dates:
+    my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
+    for valid_date in my_valid_dates:
       sche              = DiscountSchedule()
       sche.business_id  = biz_id
       sche.date         = valid_date
       sche.discount     = discount
-      schedules.append(valid_date)
+      sche.reward       = reward
+      schedules.append(sche)
+#       schedules.append(sche.to_dict())
     return schedules
   
   @staticmethod
   def validate_schedule(schedule_array, min_discount):
     import copy
     errors          = []
-    my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
-    for schedule in schedule_array:
-      if schedule['date'] in my_valid_dates:
-        my_valid_dates.remove(schedule['date'])
-      if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
-        errors.append({'field':'discount_schedule', 'error': '{0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
-    if len(my_valid_dates)>0:
-      errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
+#     my_valid_dates  = copy.copy(DiscountSchedule.valid_dates)
+#     for schedule in schedule_array:
+#       if schedule['date'] in my_valid_dates:
+#         my_valid_dates.remove(schedule['date'])
+#       if Decimal(schedule['discount'])>100 or Decimal(schedule['discount'])<min_discount:
+#         errors.append({'field':'discount_schedule', 'error': 'Discount {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_discount, 100) })
+#       if Decimal(schedule['reward'])>100 or Decimal(schedule['reward'])<min_discount:
+#         errors.append({'field':'discount_schedule', 'error': 'Reward {0} debe estar en el rango de {1} y {2}'.format(schedule['date'], min_reward, 100) })
+#     if len(my_valid_dates)>0:
+#       errors.append({'field':'discount_schedule', 'error': 'Debe indicar estos dias: {0}'.format(', '.join(my_valid_dates)) })
     
     return errors 
-  # ToDo: obtener min_discount de configuracion 
-  min_discount      = Decimal(20)
-  def from_dict(self, business_id, dict):
+  
+ 
+  def from_dict(self, business_id, dict, min_disc):
     
     self.business_id  = business_id
     self.date         = dict['date']
     self.discount     = dict['discount']
+    self.reward       = dict['reward']
+    print(' -- Schedule::from_dict() #1')
     if dict['date'] not in DiscountSchedule.valid_dates:
-      raise Exception (u"Not a valid date '{0}'".format(dict['date']))
-    if not is_number(dict['discount']) or Decimal(dict['discount'])<DiscountSchedule.min_discount:
-      raise Exception (u"Not a valid discount '{0}'. Min discount:{1}".format(dict['date']), DiscountSchedule.min_discount)
-      
+      print(' -- Schedule::from_dict() #2')
+      raise Exception (u"Dia '{0}' no valido".format(dict['date']))
+    if not is_number(self.discount) or Decimal(self.discount)<min_disc or Decimal(self.discount)>100: #DiscountSchedule.min_discount:
+      raise Exception (u"Descuento '{0}'% no valido . Minimo:{1}% y Maximo: 100% .".format(dict['date'], min_disc))
+    print(' -- Schedule::from_dict() #4')
+    if not is_number(self.reward) or Decimal(self.reward)<min_disc or Decimal(self.reward)>100: #DiscountSchedule.min_reward:
+      raise Exception (u"Recompensa '{0}'% no valida. Minimo:{1}% y Maximo: 100% .".format(dict['date'], min_disc))
+    print(' -- Schedule::from_dict() #5')
+    
   def to_dict(self):
     return {
       'id' : self.id,
       'business_id' : self.business_id,
-      'date' : self.date,
-      'discount' : self.discount
+      'date'        : self.date,
+      'discount'    : self.discount,
+      'reward'      : self.reward
     }
