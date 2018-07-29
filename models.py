@@ -212,7 +212,7 @@ class Business(Base, TimestampMixin):
   initial_credit    = Column(BigInteger, default=0)
   discount          = Column(Numeric(5,2), index=True)
   reward            = Column(Numeric(5,2), index=True)
-  image             = Column(String(256))
+  image             = Column(Text)
   location          = Column(String(256))
   latitude          = Column(Numeric(10,8), index=True)
   longitude         = Column(Numeric(11,8), index=True)
@@ -221,9 +221,10 @@ class Business(Base, TimestampMixin):
   email             = Column(String(256), index=True)
   telephone         = Column(String(256), index=True)
   
-  category = relationship('Category', foreign_keys=category_id)
-  subcategory = relationship('Category', foreign_keys=subcategory_id)
+  category          = relationship('Category', foreign_keys=category_id)
+  subcategory       = relationship('Category', foreign_keys=subcategory_id)
   discount_schedule = relationship("DiscountSchedule", back_populates="business")
+  business_credit   = relationship("BusinessCredit", back_populates="business")
   
 #   billing_address_id = Column(Integer, ForeignKey("address.id"))
 #   billing_address = relationship("Address", foreign_keys=[billing_address_id])
@@ -354,6 +355,17 @@ class Business(Base, TimestampMixin):
     self.email            = dict['email']
     self.telephone        = dict['telephone']
     
+
+class BusinessCredit(Base, TimestampMixin):
+  __tablename__     = 'business_credit'
+  id                = Column(Integer, primary_key=True)
+  business_id       = Column(Integer, ForeignKey('business.id'))
+  block_num         = Column(Integer)
+  trx_in_block      = Column(Integer)
+  op_in_trx         = Column(Integer)
+  txid              = Column(String(64), index=True)
+  processed         = Column(Integer, default=0, index=True)
+  business          = relationship("Business", back_populates="business_credit")
   
 class DiscountSchedule(Base, TimestampMixin):
   __tablename__     = 'discount_schedule'

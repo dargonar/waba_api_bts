@@ -91,7 +91,11 @@ def user_applies_authorization(t):
   # HACK : poner las privadas en orden y los owner de los assets
 #   multisig_set_overdraft(accounts_to_issue)
   print "apply auth => about to apply overdraft"
-  set_overdraft(accounts_to_issue)
+  ret = set_overdraft(accounts_to_issue)
+  
+  print json.dumps(ret)
+  # if ret ok
+  # guardamos BusinessCredit
 
 def user_transfer_authorizations(t):
   
@@ -142,6 +146,7 @@ def do_process():
         try:        
           # Operaciones de avales
 #           if t.amount_asset in ALL_AVAL_TYPES and t.to_id == DISCOIN_ADMIN_ID:
+          
           if t.amount_asset == DISCOIN_ACCESS_ID and t.to_id == DISCOIN_ADMIN_ID:
             print '------'
             print t.id

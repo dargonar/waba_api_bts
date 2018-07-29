@@ -137,12 +137,13 @@ if __name__ == '__main__':
     supply  = stats.get_asset_supply(DISCOIN_ID, mc)
     airdrop = stats.get_asset_airdrop(DISCOIN_ID, mc)
     _now    = datetime.utcnow()
-    
+    balances = get_business_balances(DISCOIN_ADMIN_ID)
     return jsonify( 
         {
           'updated_at':   str(_now),
           'main_asset':   supply,
           'airdrop':      airdrop,
+          'balances':     balances,
           'businesses': {
             'quantity': {
               'by_status': {
@@ -227,6 +228,9 @@ if __name__ == '__main__':
         if is_new:
           print(' --------- CONFIG FROM INIT MODEL')
           nm.value = init_model.get_default_configuration()
+          nm.updated_at = datetime.utcnow()
+          db.add(nm)
+          db.commit()  
         else:
           print(' --------- CONFIG FROM DDBB')
         db.expunge(nm)
@@ -300,7 +304,33 @@ if __name__ == '__main__':
     if request.method=='POST':
       # ToDo: chequear y guardar configuration set.
       return jsonify( {'method':request.method} );
+  
+  @app.route('/api/v3/dashboard/business/search', methods=['POST'])
+  def search_business():
+#     init_model.init_categories()
+#     init_model.init_businesses()
+#     init_model.init_discount_schedule()
     
+    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+    with session_scope() as db:
+      bussinesses = [ build_business(x) for x in db.query(Business).order_by(Business.id.desc()).all()] 
+      return jsonify( { 'businesses': bussinesses,
+                        'total':  len(bussinesses)} )
+    
+  @app.route('/api/v3/dashboard/business/credited/<skip>/<count>', methods=['GET'])
+  def business_credited(skip, count):
+#     init_model.init_categories()
+#     init_model.init_businesses()
+#     init_model.init_discount_schedule()
+    
+    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+    with session_scope() as db:
+      sub_stmt = db.query(BusinessCredit.business_id)
+      q = db.query(Business)
+      q = q.filter(Business.id.in_(sub_stmt))
+      q = q.order_by(Business.id.desc())
+      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
+  
   @app.route('/api/v3/dashboard/business/list/<skip>/<count>', methods=['GET'])
   def dashboard_business(skip, count):
 #     init_model.init_categories()
@@ -313,6 +343,7 @@ if __name__ == '__main__':
   
   def build_business(biz):
     business                              = biz.to_dict()
+    business['discount_ex']               = { x['date']:{'discount': str(x['discount']), 'reward': str(x['reward'])} for x in business['discount_schedule']}
     business['balances']                  = get_business_balances(biz.account_id)
     business['rating']                    = get_business_rate(biz.account_id)
     business['avg_discount_by_category']  = get_avg_discount_by_category(biz.category_id, biz.subcategory_id)
@@ -398,7 +429,7 @@ if __name__ == '__main__':
         dis_sche = DiscountSchedule()
         try:
           print('--schedule: QuE VINO?', schedule)
-          dis_sche.from_dict(biz.id, schedule)
+          dis_sche.from_dict(biz.id, schedule, biz.category.discount)
         except Exception as e:
           print('--schedule: HAY ERROR!!', str(e))
           errors.append({'field':'discount_schedule', 'error':str(e)})
@@ -597,7 +628,7 @@ if __name__ == '__main__':
       _from = (datetime.utcnow()+timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S')
 #       _from = '2018-04-24T00:00:00'
     else:
-      _from = datetime.fromtimestamp(try_int(_from/1000)).strftime('%Y-%m-%dT%H:%M:%S')
+      _from = datetime.fromtimestamp(try_int(_from)).strftime('%Y-%m-%dT%H:%M:%S')
     if not period:
       period = 86400 # 1 day in seconds
     if not periods:
@@ -1350,7 +1381,7 @@ if __name__ == '__main__':
 #     print (' -- sign_and_push_tx')
 #     print (json.dumps(tx, indent=2))
     res = extern_push_tx(tx['tx'])
-    return jsonify( {'res':res} )
+    return jsonify( res )
 
   
 #   @app.route('/api/v3/get_global_properties', methods=['GET'])
@@ -1380,6 +1411,7 @@ if __name__ == '__main__':
     if len(account_ids)>0 and len(names)>0:
       res.append(names[0])
       res.append(account_ids[0])
+      res.append(getIdenticonForAccount(names[0]))
     print (' == res : ')
     print (json.dumps(res) )
     return jsonify(res)
@@ -1575,7 +1607,7 @@ if __name__ == '__main__':
       p = rpc.network_broadcast_transaction_sync(signed_tx['tx'])
       print( json.dumps(p, indent=2))
       
-      return jsonify({'ok':'ok', 'res':p, 'identicon': getIdenticonForAccount(name)})
+      return jsonify({'ok':'ok', 'res':p, 'identicon': getIdenticonForAccount(name), 'account_id':p["trx"]["operation_results"][0][1] })
 
     except Exception as e:
       logging.error(traceback.format_exc())
