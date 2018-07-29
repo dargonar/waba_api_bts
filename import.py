@@ -110,16 +110,24 @@ def do_import():
 
           db.add(new_block)
           db.flush()
-          
+          total_c=0
+	  errors_c=0
           for blk_inx, next_block in enumerate(blocks):
-            for trx_in_block, tx in enumerate(next_block['transactions']):
+	    for trx_in_block, tx in enumerate(next_block['transactions']):
               
               ppp = tx
               try:
                 to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+		total_c+=1
+		#print ' -- OK en to_sign'
               except Exception as ex:
-                print json.dumps(tx)
-                raise ex
+		errors_c+=1
+                #to_sign=None
+		continue
+		#print ' -- ERROR en to_sign'
+		#print json.dumps(tx)
+                #print str(ex)
+	        #raise ex
               for le in db.query(LastError).filter(LastError.txid == to_sign).all():
                 le.block_num = new_block.block_num
                 le.trx_in_block = trx_in_block
@@ -129,7 +137,11 @@ def do_import():
                   continue
                 t = transfer_from_op(op, next_block['timestamp'], new_block.id, from_block+blk_inx, trx_in_block, op_in_trx)
                 db.add(t)
-         
+	  print '----'
+          print 'Total = ', str(total_c)
+	  print 'Errors = ', str(errors_c)
+	  errors_c=0
+	  total_c=0
           db.commit()
           my_block = new_block
       
