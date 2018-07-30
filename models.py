@@ -365,8 +365,16 @@ class BusinessCredit(Base, TimestampMixin):
   op_in_trx         = Column(Integer)
   txid              = Column(String(64), index=True)
   processed         = Column(Integer, default=0, index=True)
+  amount            = Column(Integer)
   business          = relationship("Business", back_populates="business_credit")
   
+  @staticmethod
+  def from_process(business_id, amount):
+    biz_credit = BusinessCredit()
+    biz_credit.business_id = business_id
+    biz_credit.amount      = amount
+    return biz_credit
+    
 class DiscountSchedule(Base, TimestampMixin):
   __tablename__     = 'discount_schedule'
   id                = Column(Integer, primary_key=True)
@@ -418,14 +426,22 @@ class DiscountSchedule(Base, TimestampMixin):
     self.discount     = dict['discount']
     self.reward       = dict['reward']
     print(' -- Schedule::from_dict() #1')
+    # if dict['date'] not in DiscountSchedule.valid_dates:
+    #   print(' -- Schedule::from_dict() #2')
+    #   raise Exception (u"Día '{0}' no válido".format(dict['date']))
+    # if not is_number(self.discount) or Decimal(self.discount)<min_disc or Decimal(self.discount)>100: #DiscountSchedule.min_discount:
+    #   raise Exception (u"Descuento '{0}'% no válido . Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
+    # print(' -- Schedule::from_dict() #4')
+    # if not is_number(self.reward) or Decimal(self.reward)<min_disc or Decimal(self.reward)>100: #DiscountSchedule.min_reward:
+    #   raise Exception (u"Recompensa '{0}'% no válida. Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
     if dict['date'] not in DiscountSchedule.valid_dates:
       print(' -- Schedule::from_dict() #2')
-      raise Exception (u"Día '{0}' no válido".format(dict['date']))
+      raise Exception (u"Dia '{0}' no valido".format(dict['date']))
     if not is_number(self.discount) or Decimal(self.discount)<min_disc or Decimal(self.discount)>100: #DiscountSchedule.min_discount:
-      raise Exception (u"Descuento '{0}'% no válido . Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
+      raise Exception (u"Descuento '{0}'% no valido . Minimo:{1}% y Maximo: 100% .".format(dict['date'], min_disc))
     print(' -- Schedule::from_dict() #4')
     if not is_number(self.reward) or Decimal(self.reward)<min_disc or Decimal(self.reward)>100: #DiscountSchedule.min_reward:
-      raise Exception (u"Recompensa '{0}'% no válida. Mínimo:{1}% y Máximo: 100% .".format(dict['date'], min_disc))
+      raise Exception (u"Recompensa '{0}'% no valida. Minimo:{1}% y Maximo: 100% .".format(dict['date'], min_disc))
     print(' -- Schedule::from_dict() #5')
     
   def to_dict(self):

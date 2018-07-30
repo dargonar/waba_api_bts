@@ -960,8 +960,8 @@ if __name__ == '__main__':
     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
     
     tx['signatures'] = [signature]
-    return tx #jsonify( {'tx':tx} )
-  
+    return tx 
+ 
   # Broadcastea la TX para que el negocio accceda a su credito.
   @app.route('/api/v3/business/endorse/apply/broadcast', methods=['POST'])
   def endorse_apply_and_broadcast():
@@ -1007,7 +1007,7 @@ if __name__ == '__main__':
       business_name  : new_overdraft
     }
 
-    return jsonify( {'ok':'ok'} )
+#     return jsonify( {'ok':'ok'} )
     
     print( "apply auth => about to apply overdraft")
     set_overdraft(obj)
@@ -1079,6 +1079,16 @@ if __name__ == '__main__':
     print( json.dumps(res, indent=2))
     return jsonify( {'res':res} )
   
+  @app.route('/api/v3/validate_name', methods=['POST'])
+  def validate_name():
+    name  = str(request.json.get('account_name'))
+    errors = []
+    if not bts2helper_is_valid_name(name):
+      errors.append({'error': 'is_not_valid_account_name'})
+    if not bts2helper_is_cheap_name(name):
+      errors.append({'error': 'is_not_cheap_account_name'})
+    return jsonify(errors)
+      
   @app.route('/api/v3/sign_and_push_tx', methods=['POST'])
   def sign_and_push_tx():
     tx  = request.json.get('tx')
@@ -1107,6 +1117,30 @@ if __name__ == '__main__':
     res = rpc.network_broadcast_transaction_sync(tx)
     print (json.dumps(res, indent=2))
     return jsonify( {'res':res} )
+
+  @app.route('/api/v3/sign_tx', methods=['POST'])
+  def sign_tx():
+    tx  = request.json.get('tx')
+    pk  = request.json.get('pk')
+    
+    priv_key = str(pk)
+    
+    print ' ===> TX:'
+    print json.dumps(tx, indent=2)
+    print ' ===> pk:'
+    print pk
+    
+    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
+    print ' ===> TO-SIGN:'
+    print to_sign
+    signature = bts2helper_sign_compact(to_sign, priv_key)
+    print '=== PRE ADD SIGNATURE:'
+    
+    if 'signatures' not in tx: 
+      tx['signatures'] = []
+    tx['signatures'].append(signature);    
+    
+    return jsonify( {'tx':tx} )
 
   
 #   @app.route('/api/v3/get_global_properties', methods=['GET'])
@@ -1298,8 +1332,17 @@ if __name__ == '__main__':
       name            = str( req.get('name') )
       email           = str( req.get('email') )
       telephone       = str( req.get('telephone') )
-      category_id     = str( req.get('category_id') )
-      subcategory_id  = str( req.get('subcategory_id') )
+      category_id     = req.get('category_id')
+      if not category_id or category_id=='':
+#         print ('category is NONE:', category_id)
+        category_id = req.get('category')
+      subcategory_id  = req.get('subcategory_id')
+      if not subcategory_id or subcategory_id=='':
+#         print ('subcategory is NONE:', subcategory_id)
+        subcategory_id = req.get('subcategory')
+      
+      category_id    = str(category_id)
+      subcategory_id = str(subcategory_id)
       
       print ('================== category_id')
       print (category_id)
@@ -1376,7 +1419,7 @@ if __name__ == '__main__':
         biz.subcategory_id  = subcategory_id
 #         _id = cache.get_account_id( unicode(account_name) )
 #         biz.account_id  = str(_id if _id else '')
-        biz.account_id      = tx["trx"]["operation_results"][0][1] 
+        biz.account_id      = p["trx"]["operation_results"][0][1] 
         db.add(biz)
         db.commit()
         

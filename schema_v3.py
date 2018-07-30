@@ -574,9 +574,15 @@ class Account(graphene.ObjectType):
       print ('[START] rpc.history_get_account_history (%s %s %s %s)' % (self.account['id'], stop, limit, start))
       raw_ops = rpc.history_get_account_history(self.account['id'], stop, limit, start)
       print ('[END] rpc.history_get_account_history x')
+      # print '[END] rpc.history_get_account_history'
 
     txs = []
-
+    
+    print '------------------------------------'
+    print ' -- START raw_ops ------------------'
+    print json.dumps(raw_ops)
+    print ' -- END raw_ops ------------------'
+    print '------------------------------------'
     # Group ops by tx
     ops_in_tx = []
     for o in raw_ops:
@@ -608,12 +614,16 @@ class Account(graphene.ObjectType):
         return NoDetailOp(oph)
 
     history = []
-
+    
+    print ' ---------------------------------------------------------------------'
+    print ' TXs -----------------------------------------------------------------'
+    print json.dumps(txs)
+    print ' ---------------------------------------------------------------------'
     j = 0
     while j < len(txs):
 
       ops = txs[j]
-      print( '=======>WORKING NEW TX')
+      # print( '=======>WORKING NEW TX')
 
       i = 0
 
@@ -628,8 +638,8 @@ class Account(graphene.ObjectType):
           pack1 = [ ops[i+x]['op'][0] for x in range(len(ts))  ]
           pack2 = [ t[0] for t in ts ]
 
-          print ("OPS_ORIG: ", pack1)
-          print ("TEMPLATE: ", pack2, u, i)
+          # print ("OPS_ORIG: ", pack1)
+          # print ("TEMPLATE: ", pack2, u, i)
 
           if pack1 == pack2:
             
@@ -646,7 +656,7 @@ class Account(graphene.ObjectType):
           u = u + 1
 
       while i < len(ops):
-        print( "meto normal ", ops[i]['op'][0])
+        # print( "meto normal ", ops[i]['op'][0])
         
         # HACK HACK CUSTOM_OPERATION
         if ops[i]['op'][0] != 35:
@@ -656,7 +666,7 @@ class Account(graphene.ObjectType):
 
       j = j + 1
        
-    print( 'voy a retornar history')
+    # print( 'voy a retornar history')
     return history
 
 class Query(graphene.ObjectType):

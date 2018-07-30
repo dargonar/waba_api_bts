@@ -5,7 +5,6 @@ from ops_func import *
 from utils import ALL_TRACKED_ASSETS, DISCOIN_SYMBOL, DISCOIN_CREDIT_SYMBOL, DISCOIN_ACCESS_SYMBOL
 
 wifs = {
-
   'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 }
 
@@ -77,7 +76,8 @@ def ops_for_issue(account_name, amount):
     account_id('discoin.admin'),
     account_id(account_name),
     assets[DISCOIN_SYMBOL],
-    reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
+#     reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
+    amount
   ) + asset_issue( 
     account_id('discoin.admin'),
     account_id(account_name),
@@ -97,7 +97,6 @@ def set_overdraft(accounts_to_issue):
   print (json.dumps(accounts_to_issue))
   print (accounts_to_issue)
   print ('==================================')
-    
     
   ops = []
   for account, new_desc in accounts_to_issue.iteritems():
@@ -121,8 +120,11 @@ def set_overdraft(accounts_to_issue):
     
     par  = Decimal(amount_value( balances[0]['amount'], assets[DISCOIN_SYMBOL] ))
     desc = Decimal(amount_value( balances[1]['amount'], assets[DISCOIN_CREDIT_SYMBOL] ))
+    
+#     print ' -------- par#1:', par 
     if balances[0]['asset_id'] == assets[DISCOIN_CREDIT_SYMBOL]['id']:
       par  = Decimal(amount_value( balances[1]['amount'], assets[DISCOIN_SYMBOL] ))
+#       print ' -------- par#2:', par 
       desc = Decimal(amount_value( balances[0]['amount'], assets[DISCOIN_CREDIT_SYMBOL] ))
     ops_w = ops_for_whitelist(account)
 
@@ -133,6 +135,7 @@ def set_overdraft(accounts_to_issue):
       ops.extend( ops_w )
     elif desc < new_desc:
       to_add = new_desc - desc
+#       print ' -------- to_add:', to_add
       ops_w[1:1] = ops_for_issue(account, to_add)
       ops.extend( ops_w )
 
@@ -155,7 +158,20 @@ def set_overdraft(accounts_to_issue):
 
 #   return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
-  
+def ops_for_issue_simple(account_name, amount):
+  res = asset_issue( 
+    account_id('discoin.admin'),
+    account_id(account_name),
+    assets[DISCOIN_SYMBOL],
+    amount
+  ) 
+  return res
+
+def issue_reserve_fund(account_name, amount):
+  init([])
+  ops = ops_for_issue_simple(account_name, amount)
+  return set_fees_and_broadcast(ops, [wifs['discoin.admin']], CORE_ASSET)
+
 # Multisig proposals
 def multisig_set_overdraft(accounts_to_issue):
 

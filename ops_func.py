@@ -15,28 +15,30 @@ def amount_of(asset, amount):
   return {'asset_id' : asset['id'], 'amount': int_amount}
 
 def set_fees(ops, pay_in):
-  print (' ================ ops_func::set_fees #1')
-  print (' == ops:')
-  print (json.dumps(ops, indent=2))
-  print (' == pay_in:')
-  print (json.dumps(pay_in, indent=2))
+#   print ' ================ ops_func::set_fees #1'
+#   print ' == ops:'
+#   print json.dumps(ops, indent=2)
+#   print ' == pay_in:'
+#   print json.dumps(pay_in, indent=2)
   fees = rpc.db_get_required_fees(ops, pay_in)
-  print (' ================ ops_func::set_fees #2')
-  for i in range(len(ops)):
-    print (' ================ ops_func::set_fees #3')
+#   print ' ================ ops_func::set_fees #2'
+  for i in xrange(len(ops)):
+#     print ' ================ ops_func::set_fees #3'
     ops[i][1]['fee'] = fees[i]
-  print (' ================ ops_func::set_fees #4')
+#   print ' ================ ops_func::set_fees #4'
   return ops
 
 def build_tx_and_broadcast(ops, wif, signatures=[]):
   
-  print (' ================ ops_func::build_tx_and_broadcast #1')
-  print ("entro con signaturas => ", signatures)
+#   print ' ================ ops_func::build_tx_and_broadcast #1'
+#   print "entro con signaturas => ", signatures
   tx = build_tx(
     ops,
     *ref_block(rpc.db_get_dynamic_global_properties()['head_block_id'])
   )
-  print (' ================ ops_func::build_tx_and_broadcast #2')
+  print (' ================ build_tx_and_broadcast:')
+  print (json.dumps(tx, indent=2))
+
   if not wif:
     #print json.dumps(tx, indent=2)
     return tx
@@ -56,9 +58,7 @@ def build_tx_and_broadcast(ops, wif, signatures=[]):
   return to_sign
 
 def set_fees_and_broadcast(ops, wif, pay_in):
-  print (' ================ ops_func::set_fees_and_broadcast #1')
   ops = set_fees(ops, pay_in)
-  print (' ================ ops_func::set_fees_and_broadcast #2')
   if not wif: return ops
   return build_tx_and_broadcast(ops, wif, [])
 
