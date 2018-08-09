@@ -1433,7 +1433,22 @@ if __name__ == '__main__':
       if not biz:
         return jsonify( { 'error' : 'account_id_not_found'} )
       return jsonify( { "account": res, 'discount_schedule' : [x.to_dict() for x in biz.discount_schedule] if biz.discount_schedule else []} );
-#     return jsonify( {"res": res} )
+  
+  @app.route('/api/v3/business/by_account_id/<account_id>', methods=['GET'])
+  def get_business_by_id(account_id):
+    obj = rpc.db_get_accounts([account_id])
+    
+    if not obj:
+      return jsonify(  {'res': 'account_not_found', 'error':1})
+    with session_scope() as db:
+      biz = db.query(Business).filter(Business.account_id==account_id).first()
+      if not biz:
+        return jsonify( { 'error' : 'account_id_not_found'} )
+      #, 'discount_schedule' : [x.to_dict() for x in biz.discount_schedule] if biz.discount_schedule else []} 
+      # "account": obj, 
+      return jsonify( { "business": biz.to_dict() });
+    
+  
   
   def get_account_impl(account):
     if str(account) != str(DISCOIN_ADMIN_NAME):
