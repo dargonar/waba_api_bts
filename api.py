@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from flask import Flask, jsonify, make_response, request, g
+from flask import send_from_directory
 from flask_graphql import GraphQLView
 from flask_cors import CORS, cross_origin
 
@@ -394,6 +395,36 @@ if __name__ == '__main__':
 #       return jsonify( { 'business': [ build_business(x) for x in db.query(Business).all()] } );
   
   
+  
+  
+  
+  import os
+  BASE_DIR        = os.path.abspath(os.path.dirname(__file__))  
+  UPLOAD_FOLDER   = os.path.join(BASE_DIR, 'static/uploads')
+  
+  def save_image(business_id, image_str):
+    if not image_str.startswith( 'data:image/png;base64' ):
+      return image_str
+    
+    import base64
+    filename = '{0}.png'.format(business_id) # I assume you have a way of picking unique filenames
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    print(' --------------- BASE_DIR:', BASE_DIR, ' | UPLOAD_FOLDER:', UPLOAD_FOLDER)
+    fh = open(filepath, "wb")
+#     imgdata = base64.decodestring(image_str.replace('data:image/png;base64,','').encode())
+    image_str = image_str.replace('data:image/png;base64,','')
+    
+    fh.write(base64.b64decode(image_str))
+    fh.close()
+    
+
+    return filename
+  
+  
+  @app.route('/files/<path:path>')
+  def files(path):
+    return send_from_directory(UPLOAD_FOLDER, path)
+
   @app.route('/api/v3/dashboard/business/profile/<account_id>/update', methods=['GET', 'POST'])
   def dashboard_update_business_profile(account_id):
     
@@ -422,7 +453,10 @@ if __name__ == '__main__':
         return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
 
       biz.discount_schedule[:] = []
+      
       biz.from_dict_for_update(biz_json)
+      filename = save_image(biz.account_id, biz.image)
+      biz.image = filename
       db.add(biz)
       print (' -- biz.category', biz.category.discount)
       for schedule in biz_json.get('discount_schedule', []):

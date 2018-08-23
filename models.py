@@ -280,7 +280,7 @@ class Business(Base, TimestampMixin):
     self.category_id        = int(dict['category_id'])
     self.subcategory_id     = int(dict['subcategory_id'])
     if dict['image']:
-      print( ' ----- updating-biz-image',  dict['image'])
+#       print( ' ----- updating-biz-image',  dict['image'])
       self.image              = dict['image']
     self.location           = dict['location']
     self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
