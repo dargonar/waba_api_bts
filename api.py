@@ -311,24 +311,34 @@ if __name__ == '__main__':
 #     init_model.init_categories()
 #     init_model.init_businesses()
 #     init_model.init_discount_schedule()
-    
+      
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
     with session_scope() as db:
-      bussinesses = [ build_business(x) for x in db.query(Business).order_by(Business.id.desc()).all()] 
+#       my_or = or_(Business.category.in_(filter.selected_categories), Business.subcategory.in_(filter.selected_categories))
+#       query = db.query(Business).filter(my_or).order_by(Business.id.desc())
+      query = db.query(Business).order_by(Business.id.desc())
+      bussinesses = [ build_business(x) for x in query.all()] 
       return jsonify( { 'businesses': bussinesses,
                         'total':  len(bussinesses)} )
     
-  @app.route('/api/v3/dashboard/business/credited/<skip>/<count>', methods=['GET'])
+  @app.route('/api/v3/dashboard/business/credited/<skip>/<count>', methods=['GET', 'POST'])
   def business_credited(skip, count):
 #     init_model.init_categories()
 #     init_model.init_businesses()
 #     init_model.init_discount_schedule()
+    filter = {'selected_categories':[]}
+    if request.method=='POST':
+      filter = request.json.get('filter')
+      print ( json.dumps(filter))
     
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
     with session_scope() as db:
       sub_stmt = db.query(BusinessCredit.business_id)
       q = db.query(Business)
       q = q.filter(Business.id.in_(sub_stmt))
+      if 'selected_categories' in filter and len(filter['selected_categories'])>0:
+        my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
+        q = q.filter(my_or)
       q = q.order_by(Business.id.desc())
       return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
   
