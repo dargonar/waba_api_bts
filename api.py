@@ -33,7 +33,7 @@ from graphql.execution.executors.thread import ThreadExecutor
 from memcache import Client
 import rpc
 import cache
-
+import cache_db
 import init_model
 
 from bitsharesbase.account import BrainKey, Address, PublicKey, PrivateKey
@@ -223,18 +223,8 @@ if __name__ == '__main__':
   def dashboard_configuration():
     if request.method=='GET':
       nm = None
-      with session_scope() as db:
-        #ret = db.query(NameValue).filter(NameValue.name=='configuration').first()
-        nm, is_new = get_or_create(db, NameValue, name  = 'configuration')
-        if is_new:
-          print(' --------- CONFIG FROM INIT MODEL')
-          nm.value = init_model.get_default_configuration()
-          nm.updated_at = datetime.utcnow()
-          db.add(nm)
-          db.commit()  
-        else:
-          print(' --------- CONFIG FROM DDBB')
-        db.expunge(nm)
+      
+      my_config = cache_db.get_configuration()
       
       asset_balance, asset_overdraft, asset_invite = rpc.db_get_assets([DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID])
       
@@ -242,53 +232,99 @@ if __name__ == '__main__':
       asset_overdraft['key']  = 'descubierto' 
       asset_invite['key']     = 'invitado'
       assets                  = {'asset_balance':asset_balance, 'asset_overdraft':asset_overdraft, 'asset_invite':asset_invite}
-      print(' --------- holis')
-      print(nm.value['warnings'])
-      return jsonify( { 'configuration': nm.value if nm.value else '', 'assets' : assets, 'updated_at' : nm.updated_at } )
+      print(' --------- my_config[value]:')
+      print(my_config['value'])
+      return jsonify( { 'configuration': my_config['value'], 'assets' : assets, 'updated_at' : my_config['updated_at'] } )
     
     if request.method=='POST':
-      # curl -H "Content-Type: application/json" -X POST -d '{ "configuration": {  "warnings": {    "first": {      "amount" : 66,      "description" : "Limit",      "color": "#FFFF00",      "extra_percentage" : 5    },    "second": {      "amount": 80,      "description" : "",      "color": "#FF0000",      "extra_percentage" : 10    }  },  "boostrap":{    "referral":{      "reward"        : 25,      "max_referrals" : 10,      "max_supply"    : 0    },    "airdrop":{      "max_registered_users" : 10000,      "amount"               : 100,      "max_supply"           : 1000000    },    "transactions":{      "max_refund_by_tx" : 500,      "min_refund_by_tx" : 50,      "max_supply"       : 5000000    },    "refund":[      {        "from_tx" : 0,        "to_tx" : 10000,        "tx_amount_percent_refunded" : 25      },      {        "from_tx" : 10000,        "to_tx" : 50000,        "tx_amount_percent_refunded" : 15      },      {        "from_tx" : 50000,        "to_tx" : 100000,        "tx_amount_percent_refunded" : 10      }    ]  },  "issuing" : {    "new_member_percent_pool" : 10  }} }' http://35.163.59.126:8080/api/v3/dashboard/configuration
       # ToDo: chequear antes de guardar configuration.
       # Validate 
-      schema = init_model.get_default_configuration()
+      schema = cache_db.get_configuration() #init_model.get_default_configuration()
       config = request.json.get('configuration')
-      str_diff = str(diff(schema, config))
+      if not config or config=={}:
+        return jsonify( { 'error': 'configuration_empty'} )
+      str_diff = str(diff(schema['value'], config))
+      
+      print(' --------- config received')
+      print(json.dumps(config ))
+      print ('------------str_diff', str_diff)
+#       return jsonify( {'ok':'ok'} )
+    
+      
       if 'delete' in str_diff:
         return jsonify( { 'error': 'not_valid_json_structure' , 'error_desc': str_diff} )
-#       if try_int(config["warnings"]["first"]["from_amount"])<=0:
-#         return jsonify( { 'error': 'warning_1_must_be_greater_zero'} )
-#       if try_int(config["warnings"]["second"]["from_amount"])<=0:
-#         return jsonify( { 'error': 'warning_2_must_be_greater_zero'} )
-#       if try_int(config["warnings"]["third"]["from_amount"])<=0:
-#         return jsonify( { 'error': 'warning_3_must_be_greater_zero'} )
-#       if try_int(config["warnings"]["first"]["from_amount"]) >= try_int(config["warnings"]["second"]["from_amount"]):
-#         return jsonify( { 'error': 'warning_1_not_minor_warning_2'} )
-#       if try_int(config["warnings"]["second"]["from_amount"]) >= try_int(config["warnings"]["third"]["from_amount"]):
-#         return jsonify( { 'error': 'warning_2_not_minor_warning_3'} )
-#       if try_float(config["reserve_fund"]["new_business_percent"])<0.0 or try_float(config["reserve_fund"]["new_business_percent"])> 100.0:
-#         return jsonify( { 'error': 'issuing_new_member_percent_pool_must_be_greater_0_and_less_100'} )
+      config["warnings"]["first"]["from_amount"]=0
+      if try_int(config["warnings"]["first"]["from_amount"])<0:
+        return jsonify( { 'error': 'warning_1_must_be_greater_zero'} )
+      if try_int(config["warnings"]["second"]["from_amount"])<0:
+        return jsonify( { 'error': 'warning_2_must_be_greater_zero'} )
+      if try_int(config["warnings"]["third"]["from_amount"])<0:
+        return jsonify( { 'error': 'warning_3_must_be_greater_zero'} )
+      if try_int(config["warnings"]["first"]["from_amount"])>try_int(config["warnings"]["second"]["from_amount"]):
+        return jsonify( { 'error': 'warning_1_not_minor_warning_2'} )
+      if try_int(config["warnings"]["second"]["from_amount"]) >= try_int(config["warnings"]["third"]["from_amount"]):
+        return jsonify( { 'error': 'warning_2_not_minor_warning_3'} )
+      if try_int(config["warnings"]["third"]["from_amount"])>100:
+        return jsonify( { 'error': 'warning_3_not_minor_100'} )
+      config["warnings"]["first"]["to_amount"] = config["warnings"]["second"]["from_amount"]
+      config["warnings"]["second"]["to_amount"] = config["warnings"]["third"]["from_amount"]
+      config["warnings"]["third"]["to_amount"] = 100
+      if try_int(config["warnings"]["first"]["extra_percentage"]) <0 or try_int(config["warnings"]["first"]["extra_percentage"]) >100:
+        return jsonify( { 'error': 'warning_1_extra_perc_between_0_100'} )
+      if try_int(config["warnings"]["second"]["extra_percentage"]) <0 or try_int(config["warnings"]["second"]["extra_percentage"]) >100:
+        return jsonify( { 'error': 'warning_2_extra_perc_between_0_100'} )
+      if try_int(config["warnings"]["third"]["extra_percentage"]) <0 or try_int(config["warnings"]["third"]["extra_percentage"]) >100:
+        return jsonify( { 'error': 'warning_3_extra_perc_between_0_100'} )
       
-#       last_from_tx  = -1
-#       last_to_tx    = -1
-#       for refund in config["bootstrap"]["refund"]:
-#         if try_int(refund["from_tx"]) < 0:
-#           return jsonify( { 'error': 'refund_from_must_be_equal_greater_zero'} )
-#         if try_int(refund["to_tx"]) <= 0:
-#           return jsonify( { 'error': 'refund_to_must_be_greater_zero'} )
-#         if try_int(refund["to_tx"]) <= try_int(refund["from_tx"]): 
-#           return jsonify( { 'error': 'refund_to_must_be_greater_from'} )
-#         if try_float(refund["tx_amount_percent_refunded"])<0.0 or try_float(refund["tx_amount_percent_refunded"])> 100:
-#           return jsonify( { 'error': 'refund_amount_must_be_greater_0_and_less_100'} )
-#       last_from_tx    = try_int(refund["from_tx"])
-#       last_to_tx      = try_int(refund["to_tx"])
+      if try_float(config["reserve_fund"]["new_business_percent"])<0.0 or try_float(config["reserve_fund"]["new_business_percent"])> 100.0:
+        return jsonify( { 'error': 'issuing_new_member_percent_pool_must_be_greater_0_and_less_100'} )
+      
+      config["airdrop"]["by_reimbursement"]["first"]["from_tx"] = 0
+      if try_int(config["airdrop"]["by_reimbursement"]["second"]["from_tx"]) < 0:
+        return jsonify( { 'error': 'airdrop_reimbursment_2_must_be_greater_zero'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["third"]["from_tx"])<0:
+        return jsonify( { 'error': 'airdrop_reimbursment_3_must_be_greater_zero'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["third"]["to_tx"])<0:
+        return jsonify( { 'error': 'airdrop_reimbursment_3_to_must_be_greater_zero'} )
+        
+      if try_int(config["airdrop"]["by_reimbursement"]["first"]["from_tx"])>try_int(config["airdrop"]["by_reimbursement"]["second"]["from_tx"]):
+        return jsonify( { 'error': 'airdrop_reimbursment_1_not_minor_than_2'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["second"]["from_tx"]) >= try_int(config["airdrop"]["by_reimbursement"]["third"]["from_tx"]):
+        return jsonify( { 'error': 'airdrop_reimbursment_2_not_minor_than_3'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["third"]["from_tx"]) > try_int(config["airdrop"]["by_reimbursement"]["third"]["to_tx"]):
+        return jsonify( { 'error': 'airdrop_reimbursment_3_from_not_minor_than_3_to'} )
+      
+      config["airdrop"]["by_reimbursement"]["first"]["to_tx"] = config["airdrop"]["by_reimbursement"]["second"]["from_tx"]
+      config["airdrop"]["by_reimbursement"]["second"]["to_tx"] = config["airdrop"]["by_reimbursement"]["third"]["from_tx"]
 
+      if try_int(config["airdrop"]["by_reimbursement"]["first"]["tx_amount_percent_refunded"] ) <0 or try_int(config["airdrop"]["by_reimbursement"]["first"]["tx_amount_percent_refunded"] ) >100:
+        return jsonify( { 'error': 'airdrop_reimbursment_1_perc_between_0_100'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["second"]["tx_amount_percent_refunded"] ) <0 or try_int(config["airdrop"]["by_reimbursement"]["second"]["tx_amount_percent_refunded"] ) >100:
+        return jsonify( { 'error': 'airdrop_reimbursment_2_perc_between_0_100'} )
+      if try_int(config["airdrop"]["by_reimbursement"]["third"]["tx_amount_percent_refunded"] ) <0 or try_int(config["airdrop"]["by_reimbursement"]["third"]["tx_amount_percent_refunded"] ) >100:
+        return jsonify( { 'error': 'airdrop_reimbursment_3_perc_between_0_100'} )
+      
+      if try_int(config["airdrop"]["by_referral"]["referred_amount"]) < 0:
+        return jsonify( { 'error': 'airdrop_referral_referred_amount_must_be_greater_or_equal_zero'} )
+      if try_int(config["airdrop"]["by_referral"]["referred_max_quantity"])<0:
+        return jsonify( { 'error': 'airdrop_referral_referred_max_quantity_must_be_greater_or_equal_zero'} )
+      if try_int(config["airdrop"]["by_referral"]["referrer_amount"])<0:
+        return jsonify( { 'error': 'airdrop_referral_referrer_amount_must_be_greater_or_equal_zero'} )
+      
+#       "airdrop": {
+#             "by_referral": {
+#                 "referred_amount": 25,
+#                 "referred_max_quantity": 5,
+#                 "referrer_amount": 25
+#             },  
+    
       with session_scope() as db:
         nm, is_new = get_or_create(db, NameValue, name  = 'configuration')
         nm.value = config
         nm.updated_at = datetime.utcnow()
         db.add(nm)
         db.commit()
-      return jsonify( {'ok':'ok'} );
+      return jsonify( {'ok':'ok'} )
   
   @app.route('/api/v3/dashboard/categories', methods=['POST', 'GET'])
   def dashboard_categories():
@@ -323,12 +359,19 @@ if __name__ == '__main__':
     
   @app.route('/api/v3/dashboard/business/credited/<skip>/<count>', methods=['GET', 'POST'])
   def business_credited(skip, count):
-#     init_model.init_categories()
-#     init_model.init_businesses()
-#     init_model.init_discount_schedule()
-    filter = {'selected_categories':[]}
+
+#     {
+#       selected_categories:[], 
+#       order: { field: 'discount', 'reward', 'proximity', date:'monday' }
+#       filter: { 
+#         payment_methods: ['cash', 'debit_card', 'credit_card']
+#       }
+#     }
+    
+    default_filter  = {'selected_categories':[], 'order': 'discount', 'filter': { 'payment_methods': ['cash', 'debit_card', 'credit_card']} }   
+    filter          = default_filter
     if request.method=='POST':
-      filter = request.json.get('filter')
+      filter = request.json.get('filter', default_filter)
       print ( json.dumps(filter))
     
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
@@ -339,9 +382,73 @@ if __name__ == '__main__':
       if 'selected_categories' in filter and len(filter['selected_categories'])>0:
         my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
         q = q.filter(my_or)
+      if 'order' in filter and filter['order']:
+        _order = filter['order']
+        if _order['field']=='discount':
+          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+          q = q.filter(DiscountSchedule.date==_order['date'])
+          q = q.order_by(DiscountSchedule.discount.desc())
+        if _order['field']=='reward':
+          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+          q = q.filter(DiscountSchedule.date==_order['date'])
+          q = q.order_by(DiscountSchedule.reward.asc())
       q = q.order_by(Business.id.desc())
-      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
+      q = q.limit(count).offset(skip)
+      return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
+#       return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
   
+  @app.route('/api/v3/dashboard/business/filter/<skip>/<count>', methods=['GET', 'POST'])
+  def business_filter(skip, count):
+
+    default_filter  = { 
+                        'selected_categories' : [], 
+                        'order'               : 'discount', 
+                        'filter'              : { 'payment_methods': ['cash', 'debit_card', 'credit_card'], 'credited': None },
+                        'search_text'         : ''
+                      }   
+    filter          = default_filter
+    if request.method=='POST':
+      filter = request.json.get('filter', default_filter)
+      print ( json.dumps(filter))
+    
+    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+    with session_scope() as db:
+#       sub_stmt = db.query(BusinessCredit.business_id)
+      q = db.query(Business)
+#       q = q.filter(Business.id.in_(sub_stmt))
+      if 'selected_categories' in filter and len(filter['selected_categories'])>0:
+        my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
+        q = q.filter(my_or)
+      if 'filter' in filter and filter['filter']:
+        _filter = filter['filter']
+        if 'credited' in _filter and _filter['credited'] and _filter['credited']!='':
+          # OPTIONS: '' | 'no_credit' | 'overdraft_send' | 'credited'
+          if 'no_credit'==_filter['credited']:
+            sub_stmt = db.query(BusinessCredit.business_id)
+  #           q = q.filter(~Business.id.in_(sub_stmt))
+            q = q.filter(Business.id.notin_(sub_stmt))
+          if 'overdraft_send'==_filter['credited']:
+             pass
+          if 'credited'==_filter['credited']:
+            sub_stmt = db.query(BusinessCredit.business_id)
+            q = q.filter(Business.id.in_(sub_stmt))
+      
+      if 'order' in filter and filter['order']:
+        _order = filter['order']
+        if _order['field']=='discount':
+          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+          q = q.filter(DiscountSchedule.date==_order['date'])
+          q = q.order_by(DiscountSchedule.discount.desc())
+        if _order['field']=='reward':
+          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+          q = q.filter(DiscountSchedule.date==_order['date'])
+          q = q.order_by(DiscountSchedule.reward.asc())
+      q = q.order_by(Business.id.desc())
+      total = q.count()
+      q = q.limit(count).offset(skip)
+#       return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
+      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] , 'total':total} )
+    
   @app.route('/api/v3/dashboard/business/list/<skip>/<count>', methods=['GET'])
   def dashboard_business(skip, count):
 #     init_model.init_categories()
@@ -406,14 +513,12 @@ if __name__ == '__main__':
   
   
   
-  
-  
   import os
   BASE_DIR        = os.path.abspath(os.path.dirname(__file__))  
   UPLOAD_FOLDER   = os.path.join(BASE_DIR, 'static/uploads')
   
   def save_image(business_id, image_str):
-    if not image_str.startswith( 'data:image/png;base64' ):
+    if not image_str or not image_str.startswith( 'data:image/png;base64' ):
       return image_str
     
     import base64
