@@ -4,12 +4,12 @@ flask_cors
 graphene
 requests
 simplejson
-python3-memcached
-# sudo apt-get install memcached
-python3-memcached
+python-memcached
 websocket-client
 python-memcached
 sqlalchemy
 pymysql
 sqlalchemy-datatables
 gevent
+# sudo apt-get install memcached
+
