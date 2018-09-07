@@ -20,7 +20,7 @@ setup(name="BTS2Helper",
     Extension("bts2helper", ["bts2helper.cpp", "bts2helper_python.cpp"],
       extra_compile_args = ['-std=c++11'], #, '-D_GLIBCXX_USE_CXX11_ABI=0'],
       #libraries = ['leveldb', 'graphene_chain' , 'graphene_db', 'fc%s'%debug , 'ssl' , 'boost_iostreams%s'%mt , 'boost_filesystem%s'%mt , 'boost_thread%s'%mt , 'easylzma_static%s' % debug , 'boost_system%s'%mt , 'boost_chrono%s'%mt , 'crypto' , 'boost_coroutine%s'%mt , 'boost_context%s'%mt, 'boost_python%s'%mt, 'boost_date_time%s'%mt],
-      libraries = ['secp256k1', 'graphene_utilities', 'graphene_chain', 'fc' , 'graphene_db', 'graphene_chain' , 'ssl' , 'boost_iostreams%s'%mt , 'boost_filesystem%s'%mt , 'boost_thread%s'%mt , 'boost_system%s'%mt , 'boost_chrono%s'%mt , 'crypto' , 'boost_coroutine%s'%mt , 'boost_context%s'%mt, 'boost_python%s'%mt, 'boost_date_time%s'%mt, 'python2.7'],
+      libraries = ['secp256k1', 'graphene_utilities', 'fc' , 'graphene_db', 'graphene_chain' , 'ssl' , 'boost_iostreams%s'%mt , 'boost_filesystem%s'%mt , 'boost_thread%s'%mt , 'boost_system%s'%mt , 'boost_chrono%s'%mt , 'crypto' , 'boost_coroutine%s'%mt , 'boost_context%s'%mt, 'boost_python%s'%mt, 'boost_date_time%s'%mt, 'python2.7'],
       # 'fc%s'%debug
       #include_dirs = ['/home/ubuntu/opt/boost_1_57_0/include', '/usr/local/include', '%s/utilities/include' % iroot , '%s/chain/include' % iroot , '%s/db/include' % iroot ,'%s/fc/include' % iroot],
       include_dirs = ['/usr/include/boost/include', '/usr/local/include', '%s/utilities/include' % iroot , '%s/chain/include' % iroot , '%s/db/include' % iroot ,'%s/fc/include' % iroot],
