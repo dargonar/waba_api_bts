@@ -368,7 +368,7 @@ if __name__ == '__main__':
 #       }
 #     }
     
-    default_filter  = {'selected_categories':[], 'order': 'discount', 'filter': { 'payment_methods': ['cash', 'debit_card', 'credit_card']} }   
+    default_filter  = {'selected_categories':[], 'order': { 'field': 'discount', 'date':'monday' }, 'filter': { 'payment_methods': ['cash', 'debit_card', 'credit_card']} }   
     filter          = default_filter
     if request.method=='POST':
       filter = request.json.get('filter', default_filter)
@@ -394,15 +394,15 @@ if __name__ == '__main__':
           q = q.order_by(DiscountSchedule.reward.asc())
       q = q.order_by(Business.id.desc())
       q = q.limit(count).offset(skip)
-      return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
-#       return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
+#       return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
+      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
   
   @app.route('/api/v3/dashboard/business/filter/<skip>/<count>', methods=['GET', 'POST'])
   def business_filter(skip, count):
 
     default_filter  = { 
                         'selected_categories' : [], 
-                        'order'               : 'discount', 
+                        'order'               : { 'field': 'discount', 'date':'monday' }, 
                         'filter'              : { 'payment_methods': ['cash', 'debit_card', 'credit_card'], 'credited': None },
                         'search_text'         : ''
                       }   

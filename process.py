@@ -144,7 +144,9 @@ def user_transfer_authorizations(t):
 
 def system_issue_credit(business_credit, reserve_fund):
 #   issue_reserve_fund(business_credit.business.account, business_credit.amount)
-  amount = business_credit.amount*reserve_fund/100
+  print ('---- biz_credit', business_credit.amount)
+  print (reserve_fund)
+  amount = int(business_credit.amount)*int(reserve_fund)/100
   print (' **** system_issue_credit')
   print (DISCOIN_ADMIN_NAME)
   print (amount)
