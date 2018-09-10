@@ -8,10 +8,10 @@ os.environ["LDFLAGS"] = "-Wl,--no-as-needed -Wl,-z,defs"
 from distutils.core import setup
 from distutils.extension import Extension
 
-# iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/ubuntu/bitshares-core/libraries')
-# lroot  = os.environ.get('GPH_ROOT_LIB', '/home/ubuntu/bitshares-core/libraries')
 iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/tuti/bitshares/libraries')
 lroot  = os.environ.get('GPH_ROOT_LIB', '/home/tuti/bitshares/libraries')
+# iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/tuti/bitshares_tmp/libraries')
+# lroot  = os.environ.get('GPH_ROOT_LIB', '/home/tuti/bitshares_tmp/libraries')
 mt     = os.environ.get('GPH_BOOST_POSTFIX', '')
 debug  = os.environ.get('GPH_DEBUG','_debug')
 
