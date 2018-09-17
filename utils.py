@@ -2,6 +2,9 @@ import os
 from decimal import Decimal, ROUND_UP
 import rpc
 
+import os
+homedir = os.environ['HOME']
+
 # ACCOUNT_PREFIX   = 'moneda-par.'
 
 ACCOUNT_PREFIX   = 'discoin.'
@@ -21,7 +24,6 @@ CORE_ASSET       = '1.3.0'
 
 ASSET_PRECISION  = 100
 
-
 # GOBIERO_PAR_ID   = '1.2.150830'
 # PROPUESTA_PAR_ID = '1.2.151476'
 
@@ -29,6 +31,12 @@ ASSET_ID            = '1.3.9'
 DISCOIN_ID          = ASSET_ID
 DISCOIN_CREDIT_ID   = '1.3.7' # DESCUBIERTO | THEDISCOIN.OD
 DISCOIN_ACCESS_ID   = '1.3.8' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
+
+if homedir=='/home/tuti':
+  ASSET_ID            = '1.3.2'
+  DISCOIN_ID          = ASSET_ID
+  DISCOIN_CREDIT_ID   = '1.3.3' # DESCUBIERTO | THEDISCOIN.OD
+  DISCOIN_ACCESS_ID   = '1.3.4' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
 
 
 DISCOIN_SYMBOL        = 'THEDISCOIN.M'
@@ -51,6 +59,9 @@ DESCUBIERTO_ID   = '1.3.1237'
 ALL_TRACKED_ASSETS  = [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID]
 ALL_VALID_ASSETS    = [DISCOIN_ID, DISCOIN_ACCESS_ID]
 CHAIN_ID         = '2cfcf449d44f477bc8415666766d2258aa502240cb29d290c1b0de91e756c559'
+
+if homedir=='/home/tuti':
+  CHAIN_ID = 'f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805'
 
 def ref_block(block_id):
   block_num    = block_id[0:8]

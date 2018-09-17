@@ -368,7 +368,7 @@ if __name__ == '__main__':
 #       }
 #     }
     
-    default_filter  = {'selected_categories':[], 'order': { 'field': 'discount', 'date':'monday' }, 'filter': { 'payment_methods': ['cash', 'debit_card', 'credit_card']} }   
+    default_filter  = {'selected_categories':[], 'order': { 'field': 'discount', 'date':'monday' }, 'filter': { 'search_text' : '', 'payment_methods': ['cash', 'debit_card', 'credit_card']} }   
     filter          = default_filter
     if request.method=='POST':
       filter = request.json.get('filter', default_filter)
@@ -382,6 +382,10 @@ if __name__ == '__main__':
       if 'selected_categories' in filter and len(filter['selected_categories'])>0:
         my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
         q = q.filter(my_or)
+      if 'filter' in filter and filter['filter'] and 'search_text' in filter['filter'] and filter['filter']['search_text']:
+        txt   = '%{0}%'.format(filter['filter']['search_text'])
+        my_or = or_(Business.name.like(txt), Business.description.like(txt))
+        q     = q.filter(my_or)
       if 'order' in filter and filter['order']:
         _order = filter['order']
         if _order['field']=='discount':
