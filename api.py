@@ -360,67 +360,69 @@ if __name__ == '__main__':
   @app.route('/api/v3/dashboard/business/credited/<skip>/<count>', methods=['GET', 'POST'])
   def business_credited(skip, count):
 
-#     {
-#       selected_categories:[], 
-#       order: { field: 'discount', 'reward', 'proximity', date:'monday' }
-#       filter: { 
-#         payment_methods: ['cash', 'debit_card', 'credit_card']
-#       }
-#     }
-    
     default_filter  = { 
-        'selected_categories' : [], 
-        'order'               : { 'field': 'discount', 'date':'monday' }, 
-        'search_text'         : '', 
-        'filter'              : {  'payment_methods': ['cash', 'debit_card', 'credit_card']} 
-    }   
+      'selected_categories' : [], 
+      'search_text'         : '',
+      'filter'              : { 'payment_methods': ['cash', 'debit_card', 'credit_card'], 'credited': 'credited' },
+      'order'               : { 'field': 'discount', 'date':'monday' }
+    }    
     filter          = default_filter
+
     if request.method=='POST':
       filter = request.json.get('filter', default_filter)
-      print ( json.dumps(filter))
-    
-    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
-    with session_scope() as db:
-      sub_stmt = db.query(BusinessCredit.business_id)
-      q = db.query(Business)
-      q = q.filter(Business.id.in_(sub_stmt))
-      if 'selected_categories' in filter and len(filter['selected_categories'])>0:
-        my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
-        q = q.filter(my_or)
-      if 'search_text' in filter and filter['search_text']:
-        txt   = '%{0}%'.format(filter['filter']['search_text'])
-        my_or = or_(Business.name.like(txt), Business.description.like(txt))
-        q     = q.filter(my_or)
-      if 'order' in filter and filter['order']:
-        _order = filter['order']
-        if _order['field']=='discount':
-          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
-          q = q.filter(DiscountSchedule.date==_order['date'])
-          q = q.order_by(DiscountSchedule.discount.desc())
-        if _order['field']=='reward':
-          q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
-          q = q.filter(DiscountSchedule.date==_order['date'])
-          q = q.order_by(DiscountSchedule.reward.asc())
-      q = q.order_by(Business.id.desc())
-      q = q.limit(count).offset(skip)
-#       return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
-      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
-  
+      if 'filter' not in filter:
+        filter['filter'] = { 'payment_methods': ['cash', 'debit_card', 'credit_card'], 'credited': 'credited' }
+      if 'credited' not in filter['filter']:
+        filter['filter']['credited'] = 'credited'
+
+    # with session_scope() as db:
+    #   sub_stmt = db.query(BusinessCredit.business_id)
+    #   q = db.query(Business)
+    #   q = q.filter(Business.id.in_(sub_stmt))
+    #   if 'selected_categories' in filter and len(filter['selected_categories'])>0:
+    #     my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
+    #     q = q.filter(my_or)
+    #   if 'search_text' in filter and filter['search_text']:
+    #     txt   = '%{0}%'.format(filter['search_text'])
+    #     my_or = or_(Business.name.like(txt), Business.description.like(txt))
+    #     q     = q.filter(my_or)
+    #   if 'order' in filter and filter['order']:
+    #     _order = filter['order']
+    #     if _order['field']=='discount':
+    #       q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+    #       q = q.filter(DiscountSchedule.date==_order['date'])
+    #       q = q.order_by(DiscountSchedule.discount.desc())
+    #     if _order['field']=='reward':
+    #       q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
+    #       q = q.filter(DiscountSchedule.date==_order['date'])
+    #       q = q.order_by(DiscountSchedule.reward.asc())
+    #   q = q.order_by(Business.id.desc())
+    #   q = q.limit(count).offset(skip)
+      # return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
+      # return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
+    return jsonify (filter_businesses(skip, count, filter, build=True))
+
   @app.route('/api/v3/dashboard/business/filter/<skip>/<count>', methods=['GET', 'POST'])
   def business_filter(skip, count):
 
     default_filter  = { 
                         'selected_categories' : [], 
-                        'order'               : { 'field': 'discount', 'date':'monday' }, 
+                        'search_text'         : '',
                         'filter'              : { 'payment_methods': ['cash', 'debit_card', 'credit_card'], 'credited': None },
-                        'search_text'         : ''
+                        'order'               : { 'field': 'discount', 'date':'monday' }
                       }   
+
     filter          = default_filter
     if request.method=='POST':
       filter = request.json.get('filter', default_filter)
-      print ( json.dumps(filter))
-    
+      
+    return jsonify (filter_businesses(skip, count, filter, build=False))
+      # return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
+      # return jsonify( { 'businesses': [ build_business(x) for x in q.all()] , 'total':total} )
+  
+  def filter_businesses(skip, count, filter, build=False):
     # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+    print ( ' *** filter_businesses:: and the filter is....', json.dumps(filter))
     with session_scope() as db:
 #       sub_stmt = db.query(BusinessCredit.business_id)
       q = db.query(Business)
@@ -428,6 +430,12 @@ if __name__ == '__main__':
       if 'selected_categories' in filter and len(filter['selected_categories'])>0:
         my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
         q = q.filter(my_or)
+      
+      if 'search_text' in filter and filter['search_text']:
+        txt   = '%{0}%'.format(filter['search_text'])
+        my_or = or_(Business.name.like(txt), Business.description.like(txt))
+        q     = q.filter(my_or)
+
       if 'filter' in filter and filter['filter']:
         _filter = filter['filter']
         if 'credited' in _filter and _filter['credited'] and _filter['credited']!='':
@@ -455,18 +463,17 @@ if __name__ == '__main__':
       q = q.order_by(Business.id.desc())
       total = q.count()
       q = q.limit(count).offset(skip)
-#       return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
-      return jsonify( { 'businesses': [ build_business(x) for x in q.all()] , 'total':total} )
-    
-  @app.route('/api/v3/dashboard/business/list/<skip>/<count>', methods=['GET'])
-  def dashboard_business(skip, count):
-#     init_model.init_categories()
-#     init_model.init_businesses()
-#     init_model.init_discount_schedule()
-    
-    # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
-    with session_scope() as db:
-      return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).order_by(Business.id.desc()).all()] } )
+
+      if build:
+        return { 'businesses': [ build_business(x) for x in q.all()] , 'total':total}
+      return { 'businesses': [ x.to_dict() for x in q.all()] , 'total':total}
+
+
+  # @app.route('/api/v3/dashboard/business/list/<skip>/<count>', methods=['GET'])
+  # def dashboard_business(skip, count):
+  #   # TODO: procesar cada comercio, y listar tambien montos refunded(out) y discounted (in), historicos
+  #   with session_scope() as db:
+  #     return jsonify( { 'businesses': [ build_business(x) for x in db.query(Business).order_by(Business.id.desc()).all()] } )
   
   def build_business(biz):
     business                              = biz.to_dict()
