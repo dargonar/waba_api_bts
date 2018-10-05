@@ -12,4 +12,5 @@ pymysql
 sqlalchemy-datatables
 gevent
 # sudo apt-get install memcached
-
+bitshares
+jsondiff

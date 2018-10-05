@@ -559,7 +559,7 @@ if __name__ == '__main__':
       biz.from_dict_for_update(biz_json)
       filename = save_image(biz.account_id, biz.image, '')
       biz.image = filename
-      filename = save_image(biz.account_id, biz.image, '_logo')
+      filename = save_image(biz.account_id, biz.logo, '_logo')
       biz.logo = filename
       
       db.add(biz)
