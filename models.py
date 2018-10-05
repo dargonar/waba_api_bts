@@ -9,7 +9,7 @@ from collections import OrderedDict
 from sqlalchemy import create_engine, UniqueConstraint, func
 from sqlalchemy import or_, and_
 from sqlalchemy import MetaData, Column, Table, ForeignKey, TypeDecorator
-from sqlalchemy import BigInteger, Integer, String, DateTime, Enum, Boolean, Date, Numeric, Text, Unicode, UnicodeText
+from sqlalchemy import BigInteger, Integer, String, DateTime, Enum, Boolean, Date, Numeric, Text, Unicode, UnicodeText, SmallInteger
 from sqlalchemy.types import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
@@ -222,6 +222,12 @@ class Business(Base, TimestampMixin):
   email             = Column(String(256), index=True)
   telephone         = Column(String(256), index=True)
   
+  logo              = Column(Text)
+  website           = Column(String(256), index=True)
+  twiter            = Column(String(128), index=True)
+  instagram         = Column(String(128), index=True)
+  facebook          = Column(String(128), index=True)
+
   category          = relationship('Category', foreign_keys=category_id)
   subcategory       = relationship('Category', foreign_keys=subcategory_id)
   discount_schedule = relationship("DiscountSchedule", back_populates="business")
@@ -280,31 +286,47 @@ class Business(Base, TimestampMixin):
     self.category_id        = int(dict['category_id'])
     self.subcategory_id     = int(dict['subcategory_id'])
     if dict['image']:
-#       print( ' ----- updating-biz-image',  dict['image'])
       self.image              = dict['image']
+    if dict['logo']:
+      self.logo               = dict['logo']
     self.location           = dict['location']
     self.latitude           = Decimal(dict['latitude']) if dict['latitude'] else Decimal(0)
     self.longitude          = Decimal(dict['longitude']) if dict['longitude'] else Decimal(0)
     self.address            = dict['address']
     self.email              = dict['email']
     self.telephone          = dict['telephone']
+    self.website            = dict['website']
+    self.twiter             = dict['twiter']
+    self.instagram          = dict['instagram']
+    self.facebook           = dict['facebook']
 #     self.discount_schedule  = dict['discount_schedule']
-    
+  
+  def getImageUrl(self, img_str):
+    if img_str and '?updated_at=' in img_str:
+      return img_str
+    if img_str:
+      return '{0}?updated_at={1}'.format(img_str ,str(self.updated_at))
+    return ''
+                                          
   def to_dict_for_update(self):
     return {
         'name'              : self.name,
         'description'       : self.description,
         'category_id'       : self.category_id,
         'subcategory_id'    : self.subcategory_id,
-        'image'           : (self.image + '?updated_at='+str(self.updated_at) if self.image else '')  ,
+        'image'             : self.getImageUrl(self.image),
+        'logo'              : self.getImageUrl(self.logo),
         'location'          : self.location,
         'latitude'          : self.latitude,
         'longitude'         : self.longitude,
         'address'           : self.address,
         'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else [],
         'telephone'         : self.telephone,
-        'email'             : self.email
-        # 'discount' : self.discount
+        'email'             : self.email,
+        'website'           : self.website,
+        'twiter'            : self.twiter,
+        'instagram'         : self.instagram,
+        'facebook'          : self.facebook
   }
   
   def to_dict(self):
@@ -324,8 +346,13 @@ class Business(Base, TimestampMixin):
         
         'telephone'       : self.telephone,
         'email'           : self.email,
+        'website'         : self.website,
+        'twiter'          : self.twiter,
+        'instagram'       : self.instagram,
+        'facebook'        : self.facebook,
         'discount'        : self.discount,
-        'image'           : (self.image + '?updated_at='+str(self.updated_at) if self.image else '')  ,
+        'image'           : self.getImageUrl(self.image),
+        'logo'            : self.getImageUrl(self.logo),
         'location'        : self.location,
         'latitude'        : self.latitude,
         'longitude'       : self.longitude,
@@ -349,13 +376,17 @@ class Business(Base, TimestampMixin):
     self.discount         = Decimal(dict['discount'])
     self.reward           = Decimal(dict['reward']) if 'reward' in dict else self.discount
     self.image            = dict['image']
+    self.logo             = dict['image']
     self.location         = dict['location']
     self.latitude         = Decimal(dict['latitude'])
     self.longitude        = Decimal(dict['longitude'])
     self.address          = dict['address']
     self.email            = dict['email']
     self.telephone        = dict['telephone']
-    
+    self.website          = dict['website']
+    self.twiter           = dict['twiter']
+    self.instagram        = dict['instagram']
+    self.facebook         = dict['facebook']
 
 class BusinessCredit(Base, TimestampMixin):
   __tablename__     = 'business_credit'
@@ -384,8 +415,13 @@ class DiscountSchedule(Base, TimestampMixin):
   date              = Column(String(32), index=True)
   discount          = Column(Numeric(5,2), index=True)
   reward            = Column(Numeric(5,2), index=True)
+  pm_cash           = Column(SmallInteger, index=True)  
+  pm_credit         = Column(SmallInteger, index=True)  
+  pm_debit          = Column(SmallInteger, index=True)  
+  pm_mercadopago    = Column(SmallInteger, index=True)  
+
   business          = relationship("Business", back_populates="discount_schedule")
-  
+    
   valid_dates = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   
   @staticmethod
@@ -398,6 +434,10 @@ class DiscountSchedule(Base, TimestampMixin):
       sche.date         = valid_date
       sche.discount     = discount
       sche.reward       = reward
+      sche.pm_cash      = 1
+      sche.pm_credit    = 1
+      sche.pm_debit     = 1
+      sche.pm_mercadopago = 1
       schedules.append(sche)
 #       schedules.append(sche.to_dict())
     return schedules
@@ -426,6 +466,11 @@ class DiscountSchedule(Base, TimestampMixin):
     self.date         = dict['date']
     self.discount     = dict['discount']
     self.reward       = dict['reward']
+                                          
+    self.pm_cash      = dict['pm_cash']
+    self.pm_credit    = dict['pm_credit']
+    self.pm_debit     = dict['pm_debit']
+    self.pm_mercadopago = dict['pm_mercadopago']
     print(' -- Schedule::from_dict() #1')
     # if dict['date'] not in DiscountSchedule.valid_dates:
     #   print(' -- Schedule::from_dict() #2')
@@ -451,5 +496,9 @@ class DiscountSchedule(Base, TimestampMixin):
       'business_id' : self.business_id,
       'date'        : self.date,
       'discount'    : self.discount,
-      'reward'      : self.reward
+      'reward'      : self.reward,
+      'pm_cash'     : self.pm_cash,
+      'pm_credit'   : self.pm_credit,
+      'pm_debit'    : self.pm_debit,
+      'pm_mercadopago' : self.pm_mercadopago
     }

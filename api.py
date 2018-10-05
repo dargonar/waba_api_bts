@@ -375,31 +375,6 @@ if __name__ == '__main__':
       if 'credited' not in filter['filter']:
         filter['filter']['credited'] = 'credited'
 
-    # with session_scope() as db:
-    #   sub_stmt = db.query(BusinessCredit.business_id)
-    #   q = db.query(Business)
-    #   q = q.filter(Business.id.in_(sub_stmt))
-    #   if 'selected_categories' in filter and len(filter['selected_categories'])>0:
-    #     my_or = or_(Business.category_id.in_(filter['selected_categories']), Business.subcategory_id.in_(filter['selected_categories']))
-    #     q = q.filter(my_or)
-    #   if 'search_text' in filter and filter['search_text']:
-    #     txt   = '%{0}%'.format(filter['search_text'])
-    #     my_or = or_(Business.name.like(txt), Business.description.like(txt))
-    #     q     = q.filter(my_or)
-    #   if 'order' in filter and filter['order']:
-    #     _order = filter['order']
-    #     if _order['field']=='discount':
-    #       q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
-    #       q = q.filter(DiscountSchedule.date==_order['date'])
-    #       q = q.order_by(DiscountSchedule.discount.desc())
-    #     if _order['field']=='reward':
-    #       q = q.join(DiscountSchedule, DiscountSchedule.business_id==Business.id)
-    #       q = q.filter(DiscountSchedule.date==_order['date'])
-    #       q = q.order_by(DiscountSchedule.reward.asc())
-    #   q = q.order_by(Business.id.desc())
-    #   q = q.limit(count).offset(skip)
-      # return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
-      # return jsonify( { 'businesses': [ build_business(x) for x in q.all()] } )
     return jsonify (filter_businesses(skip, count, filter, build=True))
 
   @app.route('/api/v3/dashboard/business/filter/<skip>/<count>', methods=['GET', 'POST'])
@@ -416,7 +391,7 @@ if __name__ == '__main__':
     if request.method=='POST':
       filter = request.json.get('filter', default_filter)
       
-    return jsonify (filter_businesses(skip, count, filter, build=False))
+    return jsonify (filter_businesses(skip, count, filter, build=True))
       # return jsonify( { 'businesses': [ x.to_dict() for x in q.all()] } )
       # return jsonify( { 'businesses': [ build_business(x) for x in q.all()] , 'total':total} )
   
@@ -533,22 +508,18 @@ if __name__ == '__main__':
   BASE_DIR        = os.path.abspath(os.path.dirname(__file__))  
   UPLOAD_FOLDER   = os.path.join(BASE_DIR, 'static/uploads')
   
-  def save_image(business_id, image_str):
+  def save_image(business_id, image_str, post_fix):
     if not image_str or not image_str.startswith( 'data:image/png;base64' ):
       return image_str
-    
     import base64
-    filename = '{0}.png'.format(business_id) # I assume you have a way of picking unique filenames
+    filename = '{0}{1}.png'.format(business_id, post_fix) # I assume you have a way of picking unique filenames
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     print(' --------------- BASE_DIR:', BASE_DIR, ' | UPLOAD_FOLDER:', UPLOAD_FOLDER)
     fh = open(filepath, "wb")
 #     imgdata = base64.decodestring(image_str.replace('data:image/png;base64,','').encode())
     image_str = image_str.replace('data:image/png;base64,','')
-    
     fh.write(base64.b64decode(image_str))
     fh.close()
-    
-
     return filename
   
   
@@ -583,12 +554,52 @@ if __name__ == '__main__':
       if len(errors)>0:
         return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
 
-      biz.discount_schedule[:] = []
+#       biz.discount_schedule[:] = []
       
       biz.from_dict_for_update(biz_json)
-      filename = save_image(biz.account_id, biz.image)
+      filename = save_image(biz.account_id, biz.image, '')
       biz.image = filename
+      filename = save_image(biz.account_id, biz.image, '_logo')
+      biz.logo = filename
+      
       db.add(biz)
+      print (' -- biz.category', biz.category.discount)
+#       for schedule in biz_json.get('discount_schedule', []):
+#         dis_sche = DiscountSchedule()
+#         try:
+#           print('--schedule: QuE VINO?', schedule)
+#           dis_sche.from_dict(biz.id, schedule, biz.category.discount)
+#         except Exception as e:
+#           print('--schedule: HAY ERROR!!', str(e))
+#           errors.append({'field':'discount_schedule', 'error':str(e)})
+#         db.add(dis_sche)
+      if len(errors)>0:
+        db.rollback()
+        return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
+      db.commit()
+
+    return jsonify({'ok':'ok'})
+
+  @app.route('/api/v3/dashboard/business/schedule/<account_id>/update', methods=['GET', 'POST'])
+  def dashboard_update_business_schedule(account_id):
+    #ToDo: Validar el secret!!!!
+    # por business y por admin
+    the_secret_text = '{0}_{1}'.format(very_secret_text, account_id)
+    
+    if request.method=='GET':
+      with session_scope() as db:
+        return jsonify( { 'business': db.query(Business).filter(Business.account_id==account_id).first().to_dict_for_update(), 'secret' : the_secret_text } );
+      
+    biz_json           = request.json.get('business')
+    signed_secret      = request.json.get('signed_secret')
+    with session_scope() as db:
+      biz = db.query(Business).filter(Business.account_id==account_id).first()
+      if not biz:
+        return jsonify( { 'error' : 'account_id_not_found'} )
+#         # Elimino la tabla de descuentos del negocio.
+#         db.query(DiscountSchedule).filter(DiscountSchedule.business_id==account_id).delete(synchronize_session='fetch')
+      
+      biz.discount_schedule[:] = []
       print (' -- biz.category', biz.category.discount)
       for schedule in biz_json.get('discount_schedule', []):
         dis_sche = DiscountSchedule()
@@ -606,60 +617,6 @@ if __name__ == '__main__':
 
     return jsonify({'ok':'ok'})
 
-  @app.route('/api/v3/dashboard/business/schedule/<account_id>/update', methods=['GET', 'POST'])
-  def dashboard_update_business_schedule(account_id):
-    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": null,    "location": null,    "longitude": null,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
-    # curl -H "Content-Type: application/json" -X POST -d '{  "business": {    "address": null,    "category_id": 1,    "description": "Larsen",    "discount_schedule": [{  "id"        : 1,  "date"      : "monday",  "discount"  : 30},{  "id"        : 1,  "date"      : "tuesday",  "discount"  : 20}],    "image": null,    "latitude": -22.36,    "location": null,    "longitude": -33.36,    "name": "Larsen",    "subcategory_id": 2  },  "secret": "secrettext_1.2.26"}' http://35.163.59.126:8080/api/v3/dashboard/business/profile/1.2.26/update
-    
-    # ToDo: Validar el secret!!!!
-    # por business y por admin
-    the_secret_text = '{0}_{1}'.format(very_secret_text, account_id)
-    
-    if request.method=='GET':
-      with session_scope() as db:
-        biz = db.query(Business).filter(Business.account_id==account_id).first()
-        if not biz:
-          return jsonify( { 'error' : 'account_id_not_found'} )
-        return jsonify( { 'discount_schedule' : [x.to_dict() for x in biz.discount_schedule] if biz.discount_schedule else [] , 'secret' : the_secret_text } );
-          
-    biz_schedule_json  = request.json.get('discount_schedule', [])
-    signed_secret      = request.json.get('signed_secret')
-    
-    # ToDo: obtener minimo descuento de categoria y pasarlo como parametro
-    errors = DiscountSchedule.validate_schedule(biz_schedule_json, 20)
-    if len(errors)>0:
-      return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
-    with session_scope() as db:
-      biz = db.query(Business).filter(Business.account_id==account_id).first()
-      if not biz:
-        print (' -- dashboard_update_business_schedule ERR#2' )
-        return jsonify( { 'error' : 'account_id_not_found'} )
-      biz.discount_schedule[:] = []
-      db.add(biz)
-      for schedule in biz_schedule_json:
-        dis_sche = DiscountSchedule()
-        print( json.dumps(schedule, indent=2)) 
-        try:
-          dis_sche.from_dict(biz.id, schedule)
-        except Exception as e:
-          print( ' ---- SII, error!', str(e)) 
-          errors.append({'field':'discount_schedule', 'error':str(e)})
-        db.add(dis_sche)
-      if len(errors)>0:
-        db.rollback()
-        return jsonify( { 'error' : 'errors_occured', 'error_list':errors } )
-      db.commit()
-
-    return jsonify({'ok':'schedule_updated_succesfully'})
-#     except Exception as e:
-#       logging.error(traceback.format_exc())
-#       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
-    
-#   @app.route('/api/v3/overdraft/invite', methods=['POST'])
-#   def invite_overdraft():
-#     business_name   = request.json.get('business_name')  
-#     initial_credit  = request.json.get('initial_credit')    
-#     business_id     = cache.get_account_id(business_name)
   
   very_secret_text  = 'thisisaveryverysecrettext123456789'
   # Login
