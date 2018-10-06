@@ -459,19 +459,30 @@ class DiscountSchedule(Base, TimestampMixin):
     
     return errors 
   
- 
-  def from_dict(self, business_id, dict, min_disc):
+  def getPaymentMethodValue(self, dict, _key, default_payments_methods):
+    #dict['cash'] if 'cash' in dict else (1 if 'cash' in default_payments_methods else 0)
+    key_name          = _key
+    key_name_extended = 'pm_{0}'.format(_key)
+    if key_name in dict:
+      return dict[key_name]
+    if key_name_extended in dict:
+      return dict[key_name_extended]
+    if key_name in default_payments_methods:
+      return 1
+    return 0
+    
+  def from_dict(self, business_id, dict, min_disc, default_payments_methods=[]):
     
     self.business_id  = business_id
     self.date         = dict['date']
     self.discount     = dict['discount']
     self.reward       = dict['reward']
                                           
-    self.pm_cash      = dict['pm_cash']
-    self.pm_credit    = dict['pm_credit']
-    self.pm_debit     = dict['pm_debit']
-    self.pm_mercadopago = dict['pm_mercadopago']
-    print(' -- Schedule::from_dict() #1')
+    self.pm_cash      = self.getPaymentMethodValue(dict, 'cash', default_payments_methods)
+    self.pm_credit    = self.getPaymentMethodValue(dict, 'credit', default_payments_methods)
+    self.pm_debit     = self.getPaymentMethodValue(dict, 'debit', default_payments_methods)
+    self.pm_mercadopago = self.getPaymentMethodValue(dict, 'mercadopago', default_payments_methods)
+#     print(' -- Schedule::from_dict() #1')
     # if dict['date'] not in DiscountSchedule.valid_dates:
     #   print(' -- Schedule::from_dict() #2')
     #   raise Exception (u"Día '{0}' no válido".format(dict['date']))

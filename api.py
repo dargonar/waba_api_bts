@@ -452,7 +452,7 @@ if __name__ == '__main__':
   
   def build_business(biz):
     business                              = biz.to_dict()
-    business['discount_ex']               = { x['date']:{'discount': str(x['discount']), 'reward': str(x['reward'])} for x in business['discount_schedule']}
+    business['discount_ex']               = { x['date']:{'discount': str(x['discount']), 'reward': str(x['reward']), 'pm_cash':x['pm_cash'], 'pm_debit':x['pm_debit'], 'pm_credit':x['pm_credit'], 'pm_mercadopago':x['pm_mercadopago']} for x in business['discount_schedule']}
     business['balances']                  = get_business_balances(biz.account_id)
     business['rating']                    = get_business_rate(biz.account_id)
     business['avg_discount_by_category']  = get_avg_discount_by_category(biz.category_id, biz.subcategory_id)
@@ -509,15 +509,16 @@ if __name__ == '__main__':
   UPLOAD_FOLDER   = os.path.join(BASE_DIR, 'static/uploads')
   
   def save_image(business_id, image_str, post_fix):
-    if not image_str or not image_str.startswith( 'data:image/png;base64' ):
+    if not image_str or (not image_str.startswith( 'data:image/png;base64' ) and not image_str.startswith('data:image/jpeg;base64') ):
       return image_str
     import base64
-    filename = '{0}{1}.png'.format(business_id, post_fix) # I assume you have a way of picking unique filenames
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    ext       = 'png' if image_str.startswith( 'data:image/png;base64' ) else 'jpeg'
+    filename  = '{0}{1}.{2}'.format(business_id, post_fix, ext) # I assume you have a way of picking unique filenames
+    filepath  = os.path.join(UPLOAD_FOLDER, filename)
     print(' --------------- BASE_DIR:', BASE_DIR, ' | UPLOAD_FOLDER:', UPLOAD_FOLDER)
-    fh = open(filepath, "wb")
+    fh        = open(filepath, "wb")
 #     imgdata = base64.decodestring(image_str.replace('data:image/png;base64,','').encode())
-    image_str = image_str.replace('data:image/png;base64,','')
+    image_str = image_str.replace('data:image/png;base64,','').replace('data:image/jpeg;base64,','')
     fh.write(base64.b64decode(image_str))
     fh.close()
     return filename
@@ -589,9 +590,11 @@ if __name__ == '__main__':
     if request.method=='GET':
       with session_scope() as db:
         return jsonify( { 'business': db.query(Business).filter(Business.account_id==account_id).first().to_dict_for_update(), 'secret' : the_secret_text } );
-      
-    biz_json           = request.json.get('business')
-    signed_secret      = request.json.get('signed_secret')
+    
+    # {"account_id":"1.2.20","payments":["cash","debit","credit"],"discount_schedule":[{"date":"monday","reward":20,"discount":20},{"date":"tuesday","reward":20,"discount":20},{"date":"wednesday","reward":20,"discount":20},{"date":"thursday","reward":20,"discount":20},{"date":"friday","reward":20,"discount":20},{"date":"saturday","reward":20,"discount":20},{"date":"sunday","reward":20,"discount":20}]}
+    discount_schedule_json = request.json.get('discount_schedule')
+    signed_secret          = request.json.get('signed_secret')
+    errors = []
     with session_scope() as db:
       biz = db.query(Business).filter(Business.account_id==account_id).first()
       if not biz:
@@ -601,11 +604,11 @@ if __name__ == '__main__':
       
       biz.discount_schedule[:] = []
       print (' -- biz.category', biz.category.discount)
-      for schedule in biz_json.get('discount_schedule', []):
+      for schedule in discount_schedule_json.get('discount_schedule', []):
         dis_sche = DiscountSchedule()
         try:
           print('--schedule: QuE VINO?', schedule)
-          dis_sche.from_dict(biz.id, schedule, biz.category.discount)
+          dis_sche.from_dict(biz.id, schedule, biz.category.discount, discount_schedule_json.get('payments', []))
         except Exception as e:
           print('--schedule: HAY ERROR!!', str(e))
           errors.append({'field':'discount_schedule', 'error':str(e)})
