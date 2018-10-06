@@ -1,0 +1,9 @@
+cd ~/bitshares-core && programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+
+cd ~/bitshares-core && programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 2cfcf449d44f477bc8415666766d2258aa502240cb29d290c1b0de91e756c559	--server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+
+cd ~/api && python main_v3.py
+cd ~/api && python import.py
+cd ~/api && python process.py
+cd ~/api && python notificator.py
+cd ~/api && python3 api.py
