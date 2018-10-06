@@ -1,0 +1,52 @@
+
+
+RUN NODE:
+programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+
+RUN WALLET:
+programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+
+
+
+---------------------------------------------
+
+programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json my-genesis.json
+programs/witness_node/witness_node --data-dir data/my-blockprod --enable-stale-production
+chain_id: a560e17af5bd34388f57486bbf7e2c0b2521ea8da23b755d4fe3724154b283da
+ 
+ -- set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
+cd bitshares-core
+git checkout master # may substitute "master" with current release tag
+git submodule update --init --recursive
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
+
+cmake -DBOOST_ROOT=/home/tuti/boost_1_57_0/boost_1_57_0
+
+/****
+sudo vi /etc/default/locale
+ 1044  sudo dpkg-reconfigure locales
+ 1045  vi /etc/default/locale
+ 1589  history | grep locale
+ 1590  vi /etc/default/locale
+ 2005  history | grep locale
+/****
+
+make
+
+mkdir -p genesis
+programs/witness_node/witness_node --create-genesis-json genesis/my-genesis.json
+
+cmake -DGRAPHENE_EGENESIS_JSON="$(pwd)/genesis/my-genesis.json"
+
+make clean
+find . -name "CMakeCache.txt" | xargs rm -f
+find . -name "CMakeFiles" | xargs rm -Rf
+cmake -DGRAPHENE_EGENESIS_JSON="$(pwd)/genesis/my-genesis.json" .
+
+make
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/ubuntu/opt/boost_1_57_0/lib/
+
+sudo cp /home/bitshares-core/libraries/fc/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.so.0 /usr/lib
