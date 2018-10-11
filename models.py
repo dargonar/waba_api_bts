@@ -359,7 +359,9 @@ class Business(Base, TimestampMixin):
         'address'         : self.address,
         'category'        : self.category.to_dict() if self.category else None,
         'subcategory'     : self.subcategory.to_dict() if self.subcategory else None,
-        'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else []
+        'discount_schedule' : [x.to_dict() for x in self.discount_schedule] if self.discount_schedule else [],
+        'updated_at'      : self.updated_at,
+        'mega_id'         : '{0}_{1}'.format(self.id, self.updated_at)
     }
   
   def from_dict(self, dict):
