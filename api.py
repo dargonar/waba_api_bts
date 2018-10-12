@@ -763,7 +763,7 @@ if __name__ == '__main__':
     print (' ====== subaccount_add_or_update_create_impl #4')
     my_amount = reverse_amount_value(limit, asset)
     my_amount_asset = {
-      'amount'  : int(my_amount),
+      'amount'  : my_amount,
       'asset_id'   : DISCOIN_ID
     }
     if perm:
@@ -918,7 +918,7 @@ if __name__ == '__main__':
     
     my_amount = reverse_amount_value(amount, asset)
     my_amount_asset = {
-      'amount'   : int(my_amount),
+      'amount'   : my_amount,
       'asset_id' : DISCOIN_ID
     }
     
@@ -1010,8 +1010,9 @@ if __name__ == '__main__':
     
     print (' === subaccount_refund_impl #2')
     my_amount = reverse_amount_value(amount, asset)
+#     print (' === subaccount_refund_impl #2.5', my_amount)
     my_amount_asset = {
-      'amount'   : int(my_amount),
+      'amount'   : my_amount,
       'asset_id' : DISCOIN_ID
     }
     
@@ -1814,6 +1815,7 @@ if __name__ == '__main__':
     print ('================== subcategory_id')
     print (subcategory_id)
 
+    cat = None
     with session_scope() as db:
       query = db.query(Business)
       my_or = or_(Business.email==email, Business.name==name, Business.telephone==telephone)
@@ -1830,12 +1832,12 @@ if __name__ == '__main__':
       cat = q2.first()
       if cat is None:
         return jsonify({'error': 'category_not_found'})
-
+      
       q3 = db.query(Category).filter(Category.id==subcategory_id).filter(Category.parent_id==category_id)
       subcat = q3.first()
       if subcat is None:
         return jsonify({'error': 'subcategory_not_found'})
-
+      db.expunge(cat)
     rop = register_account_op(
       DISCOIN_ADMIN_ID, 
       DISCOIN_ADMIN_ID, 
@@ -1880,8 +1882,8 @@ if __name__ == '__main__':
       biz.telephone       = telephone
       biz.account         = account_name
       biz.description     = name
-      biz.discount        = Decimal(10) # ToDo: traer de categoria
-      biz.reward          = Decimal(10) # ToDo: traer de categoria
+      biz.discount        = Decimal(cat.discount) # ToDo: traer de categoria
+      biz.reward          = Decimal(cat.discount) # ToDo: traer de categoria
       biz.category_id     = category_id
       biz.subcategory_id  = subcategory_id
 #         _id = cache.get_account_id( unicode(account_name) )
