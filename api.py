@@ -55,40 +55,7 @@ import stats
 
 ERR_UNKNWON_ERROR    = 'unknown_error'
 
-REGISTER_PRIVKEY = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
-
-wifs = { 
-          'discoin.biz1' : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
-          '1.2.21'       : '5J1DdLRTrwxYxFih33A8wgxRLE7hqTz6Te58ES94kqJEBsMuH3B',
-          'discoin.biz2' : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
-          '1.2.22'       : '5JaAXXB9jMEVSVEyX6DQSskQhqXRr67HwZ1jLPwHyysPWQtuZgR',
-          'discoin.biz3' : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9',
-          '1.2.25'       : '5Kjz35R9W3m5ZpznZMSpdySz35tZsXZbzsuSdbtV12YC9Zaxzd9',
-          'discoin.biz4' : '5JqmMaoHucyZPNQjBdwyVPd5vmvECD57cbZU4zNY9KMcFULDUrH',
-          '1.2.26'       : '5JqmMaoHucyZPNQjBdwyVPd5vmvECD57cbZU4zNY9KMcFULDUrH',
-  
-          'discoin.biz4.subaccount1' : '5JoV4FJuL1cTC81kcaD8aDyRfhzT63uhvnWgYGvfeZggAT2KFDy',
-          '1.2.27'                   : '5JoV4FJuL1cTC81kcaD8aDyRfhzT63uhvnWgYGvfeZggAT2KFDy',
-  
-          'discoin.biz4.subaccount2' : '5J72AuQVrsPgSqrgLhBJFG5ic46pFSnWWB5hj8cNgKwnfqrvnBd',
-          '1.2.28'                   : '5J72AuQVrsPgSqrgLhBJFG5ic46pFSnWWB5hj8cNgKwnfqrvnBd',
-          
-          'discoin.biz4.subaccount3' : '5KD2B1U3bv7nXqD1Bs1pe8EVuhJXnbgDZTxr9aTW9hgQSjqaR8G',
-          '1.2.29'                   : '5KD2B1U3bv7nXqD1Bs1pe8EVuhJXnbgDZTxr9aTW9hgQSjqaR8G',
-  
-          'discoin.biz5'             : '5KD8g6ZFLonwYahnLDU5m7HFiMHZb6f243mC4X3sZjSuC5PZM2R',
-          '1.2.30'                   : '5KD8g6ZFLonwYahnLDU5m7HFiMHZb6f243mC4X3sZjSuC5PZM2R',
-          
-          'discoin.biz6'  : '5HtE1vGyBGSpTn4bwgxjypg5XbQEZsGpULUR9sbVH6PU32NxYL4',
-          '1.2.31' 			  : '5HtE1vGyBGSpTn4bwgxjypg5XbQEZsGpULUR9sbVH6PU32NxYL4',
-
-          'discoin.biz7'  : '5K8p5cSgGS5hZjZQqxpLMS4kcB6dCKcVU2hRVEfnWgRYHSUz2bn',
-          '1.2.32' 			  : '5K8p5cSgGS5hZjZQqxpLMS4kcB6dCKcVU2hRVEfnWgRYHSUz2bn',
-
-          'discoin.biz8' 	: '5JDTLHWMZZNv4fYdzSkMpRcXdxWTBEJqSQwg18bo4evh8gwhrhg',
-          '1.2.33' 			  : '5JDTLHWMZZNv4fYdzSkMpRcXdxWTBEJqSQwg18bo4evh8gwhrhg'
-  
-       }
+REGISTER_PRIVKEY     = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 
 mc = Client(['127.0.0.1:11211'], debug=0)
 
@@ -675,8 +642,20 @@ if __name__ == '__main__':
   
   # Lista las subcuentas de un business.
   @app.route('/api/v3/business/<business_id>/subaccount/list/<start>', methods=['GET', 'POST'])
-  def business_account_list(business_id, start):
-    # EJEMPLO: http://35.163.59.126:8080/api/v3/business/1.2.25/subaccount/list/0
+  def business_subaccount_list(business_id, start):
+#     print( ' == get_withdraw_permissions_by_giver:')
+#     if not start or str(start).strip()=='0':
+#       start = '1.12.0'
+#     perms = rpc.db_get_withdraw_permissions_by_giver(business_id, start, 100)
+#     subaccounts = []
+#     for perm in perms:
+#       # Check if account already added???
+#       subaccounts.append( build_subaccount ( cache.get_account(perm['authorized_account']), perm ) )
+#     return jsonify( { 'subaccounts': subaccounts, 'permissions' : perms} )
+    ret = business_subaccount_list_impl(business_id, start, True)
+    return jsonify( { 'subaccounts': ret['subaccounts'], 'permissions' : ret['perms']} )
+  
+  def business_subaccount_list_impl(business_id, start, build_subaccounts):
     print( ' == get_withdraw_permissions_by_giver:')
     if not start or str(start).strip()=='0':
       start = '1.12.0'
@@ -684,9 +663,13 @@ if __name__ == '__main__':
     subaccounts = []
     for perm in perms:
       # Check if account already added???
-      subaccounts.append( build_subaccount ( cache.get_account(perm['authorized_account']), perm ) )
-    return jsonify( { 'subaccounts': subaccounts, 'permissions' : perms} )
-
+      if build_subaccounts:
+        subaccounts.append( build_subaccount ( cache.get_account(perm['authorized_account']), perm ) )
+      else:
+#         print(' ---- business_subaccount_list_impl', json.dumps(perm['authorized_account']))
+        subaccounts.append( perm['authorized_account'])
+    return {'subaccounts':subaccounts, 'perms':perms}
+  
   def build_subaccount(account, perm):
     asset = rpc.db_get_assets([DISCOIN_ID])[0]
     return { 
@@ -808,41 +791,6 @@ if __name__ == '__main__':
 #     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
 #     tx['signatures'] = [signature]
 #     return tx
-  
-  # Broadcastea la TX para agregar una subcuenta a un negocio, habilita a una cuenta a "chupar" de la cuenta madre del negocio.
-  @app.route('/api/v3/business/subaccount/add_or_update/create/broadcast', methods=['POST'])
-  def subaccount_add_or_update_create_and_broadcast():
-    
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.27", "limit" : "2000", "_from" : null, "period" : null, "periods" : 365}' http://35.163.59.126:8080/api/v3/business/subaccount/add_or_update/create/broadcast
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.28", "limit" : "2000", "_from" : null, "period" : null, "periods" : 365}' http://35.163.59.126:8080/api/v3/business/subaccount/add_or_update/create/broadcast
-      
-    business_id     = request.json.get('business_id')  
-    subaccount_id   = request.json.get('subaccount_id')  
-    limit           = request.json.get('limit')
-    _from           = request.json.get('from')
-    period          = request.json.get('period')
-    periods         = request.json.get('periods')
-
-    tx = subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods)
-    
-    if 'error' in tx:
-      return jsonify(tx)
-    
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    
-    signature = bts2helper_sign_compact(to_sign, wifs[business_id])
-    
-    if 'signatures' not in tx: 
-      tx['signatures'] = []
-    tx['signatures'].append(signature);    
-    
-    # como listamos los permisos? -> get_account_history_by_operations discoin.biz3 [25] 0 100 ??
-    # como testeamos el permiso?  -> transfer discoin.biz4.subaccount1 discoin.biz4.subaccount2 10000 THEDISCOIN.M "ehhh" true
-
-    res = rpc.network_broadcast_transaction_sync(tx)
-    print( json.dumps(res, indent=2))
-    return jsonify( {'res':res} )
-  
   
   # =================================================================================================
   # =================================================================================================
@@ -1063,36 +1011,6 @@ if __name__ == '__main__':
     tx['signatures'] = [signature]
     return tx
 
-  # Broadcastea la TX para refundear una compra.
-  @app.route('/api/v3/business/subaccount/refund/create/broadcast', methods=['POST'])
-  def subaccount_refund_and_broadcast():
-    
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_id" : "1.2.25", "subaccount_id" : "1.2.27", "to" : "1.2.19", "amount" : 500, "bill_amount" : 2000, "bill_id" : "this_is_a_bill_id"}' http://35.163.59.126:8080/api/v3/business/subaccount/refund/create/broadcast  
-    business_id     = request.json.get('business_id')
-    subaccount_id   = request.json.get('subaccount_id')
-    _to             = request.json.get('to')  
-    amount          = request.json.get('amount')  
-    bill_amount     = request.json.get('bill_amount')  
-    bill_id         = request.json.get('bill_id')  
-
-    tx = subaccount_refund_impl(business_id, subaccount_id, _to, amount, bill_amount, bill_id)
-    
-    if 'error' in tx:
-      return jsonify( tx )
-    
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    
-    signature = bts2helper_sign_compact(to_sign, wifs[subaccount_id])
-    
-    if 'signatures' not in tx: 
-      tx['signatures'] = []
-    tx['signatures'].append(signature);    
-    
-    res = rpc.network_broadcast_transaction_sync(tx)
-    print( json.dumps(res, indent=2))
-    return jsonify( {'res':res, 'tx':tx} )
-  
-    
   @app.route('/api/v3/account/change_keys/<account>/<owner>/<active>/<memo_key>', methods=['GET'])
   def change_keys(account, owner, active, memo_key):
     from credit_func import account_id
@@ -1320,39 +1238,6 @@ if __name__ == '__main__':
     print (tx)
 #     tx['signatures'] = [signature]
     return signed_tx['tx']
-  
-  # Broadcastea la TX para que el negocio accceda a su credito.
-  @app.route('/api/v3/business/endorse/apply/broadcast', methods=['POST'])
-  def endorse_apply_and_broadcast():
-    # TEST: 
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz1","initial_credit":"10000"}' http://35.163.59.126:8080/api/v3/business/endorse/apply/broadcast
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz2","initial_credit":"15000"}' http://35.163.59.126:8080/api/v3/business/endorse/apply/broadcast
-    # curl -H "Content-Type: application/json" -X POST -d '{"business_name":"discoin.biz3"}' http://35.163.59.126:8080/api/v3/business/endorse/apply/broadcast
-    business_name   = request.json.get('business_name')  
-#     initial_credit  = request.json.get('initial_credit')
-    
-#     op_id           = request.json.get('op_id')
-    print( ' ======================================================')
-    print( ' ====== endorse_apply_and_broadcast #1')
-    
-#     tx  = endorse_apply_impl(business_name, initial_credit)
-    tx  = endorse_apply_impl(business_name)
-    
-    print( ' ======================================================')
-    print( ' ====== endorse_apply_and_broadcast #2')
-    to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
-    
-    print( ' ======================================================')
-    print( ' ====== endorse_apply_and_broadcast #3')
-    signature = bts2helper_sign_compact(to_sign, wifs[business_name])
-    
-    if 'signatures' not in tx: 
-      tx['signatures'] = []
-    tx['signatures'].append(signature);
-    
-    res = rpc.network_broadcast_transaction_sync(tx)
-    print( json.dumps(res, indent=2))
-    return jsonify( {'res':res, 'tx':tx} )
   
   
   # Crea la TX para que un negocio accceda a su credito.
@@ -1903,11 +1788,36 @@ if __name__ == '__main__':
 #       logging.error(traceback.format_exc())
 #       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
   
+  @app.route('/api/v3/business/<account_id>/transactions/list/extended', methods=['GET', 'POST'])
+  def get_business_transactions_extended(account_id):
+    return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id) } )
+ 
   
+  def get_business_transactions_extended_impl(account_id):
+    
+    if not account_id:
+      return make_response(jsonify({'error': 'NO_ACCOUNT_ID_PROVIDED'}), 500)
+    
+    # 1- traemos las subcuentas del comercio via memcached
+    subaccounts = business_subaccount_list_impl(account_id, 0, False)['subaccounts']
+    
+    main_asset = cache.get_asset(DISCOIN_ID)
+    # 2- listamos trasnacciones de BBDD
+    subaccounts.append(account_id)
+    with session_scope() as db:
+      q = db.query(Transfer)
+      my_or = or_(Transfer.from_id.in_(subaccounts), Transfer.to_id.in_(subaccounts))
+      q = q.filter(my_or)
+      q = q.order_by(Transfer.id.desc())
+      return [ c.to_dict_ex(main_asset) for c in q.all()]
+    
+    # 3- retornamos formateado
+    
   @app.route('/api/v3/business/<account_id>/transactions/list', methods=['GET', 'POST'])
   def get_business_transactions(account_id):
-    return jsonify( { 'txs' : get_business_transactions_impl(account_id) } )
- 
+#     return jsonify( { 'txs' : get_business_transactions_impl(account_id) } )
+    return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id) } )
+    
   def get_business_transactions_impl(account_id):
     
     stop    = 0

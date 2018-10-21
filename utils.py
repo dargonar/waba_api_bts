@@ -1,7 +1,6 @@
 import os
 from decimal import Decimal, ROUND_UP
 import rpc
-
 import os
 homedir = os.environ['HOME']
 
@@ -119,3 +118,50 @@ def try_float(value, default=0.0):
     return float(value)
   except:
     return float(default)
+  
+def decode_memo(memo_message, _amount, asset):
+  import hashlib, binascii
+  
+  refund_prefix    = binascii.hexlify('~re:'.encode()).decode('utf-8')
+  discount_prefix  = binascii.hexlify('~di:'.encode()).decode('utf-8')
+  _type = ''
+  if memo_message:  
+    if memo_message[:8]==refund_prefix:
+      _type = 'refund' 
+    if memo_message[:8]==discount_prefix:
+      _type = 'discount' 
+    if _type=='':
+      return {
+        '_type'       : 'transfer',
+        'bill_id'     : 0,
+        'bill_amount' : 0,
+        'discount'    : 0,
+        'memo'        : ''
+      }
+      
+  _memo = binascii.unhexlify(memo_message).decode('utf-8')
+  _memo_split = _memo.split(':')
+  bill_id     = '' 
+  bill_amount = 0
+  if len(_memo_split)>2:
+    # ~re:1500:the bill
+    bill_amount = Decimal(try_float(_memo_split[1]))
+    bill_id     = _memo_split[2] 
+  discount = 0
+  if bill_amount>0:
+    discount = round_decimal(Decimal(_amount)*100/bill_amount)
+  return {
+    '_type'       : _type,
+    'bill_id'     : bill_id,
+    'bill_amount' : bill_amount,
+    'discount'    : discount,
+    'memo'        : _memo
+  }
+
+
+def convert_date(timestamp, hour_delta):
+  import time
+  import datetime
+  
+  return (timestamp+datetime.timedelta(hours = hour_delta)).strftime('%Y-%m-%dT%H:%M:%S') 
+  

@@ -72,8 +72,8 @@ def get_or_create(session, model, **kwargs):
     return instance, True
 
 class TimestampMixin(object):
-  created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-  updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False, index=True)
+  created_at = Column(DateTime, default=datetime.utcnow(), nullable=False, index=True)
+  updated_at = Column(DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False, index=True)
 
   def older_than(self, delta):
     return datetime.utcnow() - self.created_at > delta
@@ -152,7 +152,71 @@ class Transfer(Base, TimestampMixin):
   memo         = Column(String(32))
 
   processed    = Column(Integer, default=0, index=True)
+  
+  def to_dict(self):
+    return {
+      'block_id' : self.block_id,
+      'id' : self.id,
+      'from_id' : self.from_id,
+      'from_name' : self.from_name,
+      'to_id' : self.to_id,
+      'to_name' : self.to_name,
+      'amount' : self.amount,
+      'amount_asset' : self.amount_asset,
+      'fee' : self.fee,
+      'fee_asset' : self.fee_asset,
+      'timestamp' : self.timestamp,
+      'block_num' : self.block_num,
+      'trx_in_block' : self.trx_in_block,
+      'op_in_trx' : self.op_in_trx,
+      'memo' : self.memo,
+      'processed' : self.processed
+    }
+  
+  def to_dict_ex(self, asset):
+    # required: asset = cache.get_asset(asset_id)
+    my_amount = amount_value( str(self.amount), asset)
+    # round_decimal(Decimal(self.amount)/100)
+    _memo_obj = decode_memo(self.memo, my_amount, asset)
+#     decode_memo(memo_message, _amount, asset)
+#     '_type'       : _type,
+#     'bill_id'     : bill_id,
+#     'bill_amount' : bill_amount,
+#     'discount'    : discount,
+#     'memo'        : _memo
 
+    return {
+      'id' : self.id,
+      'from_id' : self.from_id,
+      'from_name' : self.from_name,
+      'to_id' : self.to_id,
+      'to_name' : self.to_name,
+      'amount' : my_amount,
+      'amount_asset' : self.amount_asset,
+      'fee' : self.fee,
+      'fee_asset' : self.fee_asset,
+      'timestamp' : self.timestamp,
+      
+      'bill_amount': _memo_obj['bill_amount'],
+      'bill_id': _memo_obj['bill_id'],
+      'date': convert_date(self.created_at, -3),
+      'discount': _memo_obj['discount'],
+      'from': {
+          'id': self.from_id,
+          'name': self.from_name
+      },
+      'memo': {
+          'message': _memo_obj['memo'],
+          'original': self.memo
+      },
+      'to': {
+          'id': self.to_id,
+          'name': self.to_name,
+      },
+      'type': _memo_obj['_type']
+    }
+
+  
 class LastError(Base, TimestampMixin):
   __tablename__ = 'last_error'
 
