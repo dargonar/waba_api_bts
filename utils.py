@@ -48,7 +48,7 @@ if homedir=='/home/tuti':
 
 if str(os.environ.get('PROD', '0')) == '1':
   CHAIN_ID              = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8';
-  DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
+  DB_URL                = os.environ.get('DB_URL', "mysql+pymysql://discoin:7rc)FE#'r6=rus~M@discoin-db-cluster.cluster-cmhexratphp1.us-west-2.rds.amazonaws.com/discoin?charset=utf8")
   REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '')
   DISCOIN_ADMIN_ID      = '1.2.1105469'     # discoin.admin
   DISCOIN_ADMIN_NAME    = 'discoin-gov'

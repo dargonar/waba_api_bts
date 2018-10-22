@@ -19,7 +19,7 @@ import logging
 
 
 # RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:11011/rpc')
-RPC_NODE = 'http://localhost:11011/rpc'
+RPC_NODE = 'http://10.50.10.24:8090/rpc'
 # print 'using RPC @ ', RPC_NODE
 
 class RpcError(Exception):
