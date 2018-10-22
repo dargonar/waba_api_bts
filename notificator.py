@@ -14,7 +14,7 @@ from time import sleep
 from utils import *
 from models import *
 
-WS_NODE = os.environ.get('WS_NODE', 'ws://10.50.10.24:8090/')
+WS_NODE = os.environ.get('WS_NODE', 'ws://127.0.0.1:8090/')
 print ('using WS_NODE =>', WS_NODE)
  
 def send_notification(account_name, message):
