@@ -2,10 +2,11 @@ import rpc
 import simplejson as json
 
 from ops_func import *
-from utils import ALL_TRACKED_ASSETS, DISCOIN_SYMBOL, DISCOIN_CREDIT_SYMBOL, DISCOIN_ACCESS_SYMBOL
+from utils import ALL_TRACKED_ASSETS, DISCOIN_SYMBOL, DISCOIN_CREDIT_SYMBOL, DISCOIN_ACCESS_SYMBOL, DISCOIN_ADMIN_NAME, REGISTER_PRIVKEY
 
 wifs = {
-  'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
+  # 'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
+  DISCOIN_ADMIN_NAME   : REGISTER_PRIVKEY
 }
 
 accounts = {}
@@ -36,23 +37,23 @@ def init(other_accounts):
 
 def ops_for_remove(account_name, amount):
   res = override_transfer( 
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     assets[DISCOIN_SYMBOL],
     reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
   ) + asset_reserve(
-    account_id('discoin.admin'), 
+    account_id(DISCOIN_ADMIN_NAME), 
     assets[DISCOIN_SYMBOL], 
     reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
   ) + override_transfer( 
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     assets[DISCOIN_CREDIT_SYMBOL],
     amount
   ) + asset_reserve(
-    account_id('discoin.admin'), 
+    account_id(DISCOIN_ADMIN_NAME), 
     assets[DISCOIN_CREDIT_SYMBOL], 
     amount
   )
@@ -61,11 +62,11 @@ def ops_for_remove(account_name, amount):
 
 def ops_for_whitelist(account_name):
   res = account_whitelist(
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
     1 #insert into white list
   ) + account_whitelist(
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
     0 #remove from list (white or black)
   )
@@ -73,13 +74,13 @@ def ops_for_whitelist(account_name):
 
 def ops_for_issue(account_name, amount):
   res = asset_issue( 
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
     assets[DISCOIN_SYMBOL],
 #     reverse_amount_value(amount, assets[DISCOIN_SYMBOL])
     amount
   ) + asset_issue( 
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
     assets[DISCOIN_CREDIT_SYMBOL],
     amount
@@ -154,13 +155,13 @@ def set_overdraft(accounts_to_issue):
   print ('process::#1 about to set overdearft')
   print (json.dumps (accounts_to_issue))
   print ('END ===================================')
-  return set_fees_and_broadcast(ops, [wifs['discoin.admin']], CORE_ASSET)
+  return set_fees_and_broadcast(ops, [wifs[DISCOIN_ADMIN_NAME]], CORE_ASSET)
 
 #   return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 def ops_for_issue_simple(account_name, amount):
   res = asset_issue( 
-    account_id('discoin.admin'),
+    account_id(DISCOIN_ADMIN_NAME),
     account_id(account_name),
     assets[DISCOIN_SYMBOL],
     amount
@@ -170,48 +171,48 @@ def ops_for_issue_simple(account_name, amount):
 def issue_reserve_fund(account_name, amount):
   init([])
   ops = ops_for_issue_simple(account_name, amount)
-  return set_fees_and_broadcast(ops, [wifs['discoin.admin']], CORE_ASSET)
+  return set_fees_and_broadcast(ops, [wifs[DISCOIN_ADMIN_NAME]], CORE_ASSET)
 
 # Multisig proposals
-def multisig_set_overdraft(accounts_to_issue):
+# def multisig_set_overdraft(accounts_to_issue):
 
-  init(list(accounts_to_issue))
+#   init(list(accounts_to_issue))
 
-  ops = []
-  for account, new_desc in accounts_to_issue.iteritems():
+#   ops = []
+#   for account, new_desc in accounts_to_issue.iteritems():
 
-    balances = rpc.db_get_account_balances(account_id(account), [assets['MONEDAPAR']['id'], assets['DESCUBIERTOPAR']['id']])
-    assert(balances[0]['asset_id'] == assets['MONEDAPAR']['id']), "Invalid 0 balance"
-    assert(balances[1]['asset_id'] == assets['DESCUBIERTOPAR']['id']), "Invalid 1 balance"
+#     balances = rpc.db_get_account_balances(account_id(account), [assets['MONEDAPAR']['id'], assets['DESCUBIERTOPAR']['id']])
+#     assert(balances[0]['asset_id'] == assets['MONEDAPAR']['id']), "Invalid 0 balance"
+#     assert(balances[1]['asset_id'] == assets['DESCUBIERTOPAR']['id']), "Invalid 1 balance"
     
-    par  = Decimal(amount_value( balances[0]['amount'], assets['MONEDAPAR'] ))
-    desc = Decimal(amount_value( balances[1]['amount'], assets['DESCUBIERTOPAR'] ))
+#     par  = Decimal(amount_value( balances[0]['amount'], assets['MONEDAPAR'] ))
+#     desc = Decimal(amount_value( balances[1]['amount'], assets['DESCUBIERTOPAR'] ))
 
-    ops_w = ops_for_whitelist(account)
+#     ops_w = ops_for_whitelist(account)
 
-    if desc > new_desc:
-      to_remove = desc - new_desc
-      assert( par - to_remove >= 0 ), "account {0} => no hay par({1}) suficiente para sacar ({2})".format(account, par, to_remove)
-      ops_w[1:1] = ops_for_remove(account, to_remove)
-      ops.extend( ops_w )
-    elif desc < new_desc:
-      to_add = new_desc - desc
-      ops_w[1:1] = ops_for_issue(account, to_add)
-      ops.extend( ops_w )
+#     if desc > new_desc:
+#       to_remove = desc - new_desc
+#       assert( par - to_remove >= 0 ), "account {0} => no hay par({1}) suficiente para sacar ({2})".format(account, par, to_remove)
+#       ops_w[1:1] = ops_for_remove(account, to_remove)
+#       ops.extend( ops_w )
+#     elif desc < new_desc:
+#       to_add = new_desc - desc
+#       ops_w[1:1] = ops_for_issue(account, to_add)
+#       ops.extend( ops_w )
 
-    # Lo limpiamos de la blacklist de propuesta (para q pueda recibir avals)  
-    ops += account_whitelist(
-      PROPUESTA_PAR_ID,
-      account_id(account),
-      0 #remove from black list
-    )
+#     # Lo limpiamos de la blacklist de propuesta (para q pueda recibir avals)  
+#     ops += account_whitelist(
+#       PROPUESTA_PAR_ID,
+#       account_id(account),
+#       0 #remove from black list
+#     )
 
-  assert( len(ops) > 0 ), "No hay operaciones parar realizar"
-  #print json.dumps(ops, indent=2)
-  #return
+#   assert( len(ops) > 0 ), "No hay operaciones parar realizar"
+#   #print json.dumps(ops, indent=2)
+#   #return
 
-  return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
-  #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
+#   return set_fees_and_broadcast(ops, [wifs['marcio'], wifs['beto']], CORE_ASSET)
+#   #res = proposal_create(account_id('propuesta-par'), ops, wifs['propuesta-par'])
 
 def multisig_delete_proposal(proposal_id):
   init([])
@@ -298,7 +299,7 @@ def multisig_change_keys(account, owner, active, memo_key):
   
   owner_auth = {
     'weight_threshold' : 1,
-    'account_auths'    : [[account_id('discoin.admin'),1]],
+    'account_auths'    : [[account_id(DISCOIN_ADMIN_NAME),1]],
     'key_auths'        : [[owner,1]], 
     'address_auths'    : []
   }
@@ -308,7 +309,7 @@ def multisig_change_keys(account, owner, active, memo_key):
     owner_auth, 
     active_auth, 
     {'memo_key':memo_key},
-    [wifs['discoin.admin']]
+    [wifs[DISCOIN_ADMIN_NAME]]
   )
   
 #   ,

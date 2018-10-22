@@ -55,7 +55,7 @@ import stats
 
 ERR_UNKNWON_ERROR    = 'unknown_error'
 
-REGISTER_PRIVKEY     = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
+# REGISTER_PRIVKEY     = '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
 
 mc = Client(['127.0.0.1:11211'], debug=0)
 
@@ -1642,6 +1642,7 @@ if __name__ == '__main__':
   def getIdenticonForAccount(account_name):
     if not account_name:
       account_name = 'discoin'
+    account_name = account_name.replace(ACCOUNT_PREFIX, '')
     return hashlib.sha512(account_name.encode()).hexdigest()
   
   @app.route('/api/v3/account/identicon', methods=['GET'])

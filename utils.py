@@ -4,64 +4,65 @@ import rpc
 import os
 homedir = os.environ['HOME']
 
-# ACCOUNT_PREFIX   = 'moneda-par.'
-
 ACCOUNT_PREFIX   = 'discoin.'
 
-DB_URL            = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
-REGISTER_PRIVKEY  = os.environ.get('REGISTER_PRIVKEY', '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9')
-# LOCKSMITH_PRIVKEY = os.environ.get('LOCKSMITH_PRIVKEY', '5KjQfg8uVMw3g72LLbTd9e6XPqzzy6Zo39NsbUKfEk9WNiYjqur')
-LOCKSMITH_PRIVKEY = os.environ.get('LOCKSMITH_PRIVKEY', '5JMkKXKcLbbrH4ypQ1Z2pP2qKtL9r3nsLycht6UsDxYu9KoKMD9')
+# PRIVATE NETWORK -> ssh -i bitshares_fork_1.pem ubuntu@35.163.59.126
+# CHAIN_ID = 'bde617520673d18e67db5d7060ca2740f80e28093519c30176044c8d4a227e73'
 
-DISCOIN_ADMIN_ID     = '1.2.18'     # discoin.admin
-DISCOIN_ADMIN_NAME   = 'discoin.admin'
-# DISCOIN_LOCKSMITH_ID = '1.2.24'   # discoin.locksmith 
-DISCOIN_LOCKSMITH_ID = '1.2.17'     # nathan
-DISCOIN_HANDLER_ID   = '1.2.23'     # discoin.handler
+# PRIVATE NETWORK -> tuti localhost
+# CHAIN_ID = 'f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805'
 
-CORE_ASSET       = '1.3.0'
+# PRIVATE NETWORK -> MAIN NETWORK
+# CHAIN_ID = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8';
 
-ASSET_PRECISION  = 100
+CHAIN_ID              = 'bde617520673d18e67db5d7060ca2740f80e28093519c30176044c8d4a227e73'
+DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
+REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9')
 
-# GOBIERO_PAR_ID   = '1.2.150830'
-# PROPUESTA_PAR_ID = '1.2.151476'
+CORE_ASSET            = '1.3.0'
+ASSET_PRECISION       = 100
 
-ASSET_ID            = '1.3.2'
-DISCOIN_ID          = ASSET_ID
-DISCOIN_CREDIT_ID   = '1.3.3' # DESCUBIERTO | THEDISCOIN.OD
-DISCOIN_ACCESS_ID   = '1.3.4' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
-
-if homedir=='/home/tuti':
-  ASSET_ID            = '1.3.2'
-  DISCOIN_ID          = ASSET_ID
-  DISCOIN_CREDIT_ID   = '1.3.3' # DESCUBIERTO | THEDISCOIN.OD
-  DISCOIN_ACCESS_ID   = '1.3.4' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
-
-
+DISCOIN_ADMIN_ID      = '1.2.18'     # discoin.admin
+DISCOIN_ADMIN_NAME    = 'discoin.admin'
+ASSET_ID              = '1.3.2'
+DISCOIN_ID            = ASSET_ID
+DISCOIN_CREDIT_ID     = '1.3.3' # DESCUBIERTO | THEDISCOIN.OD
+DISCOIN_ACCESS_ID     = '1.3.4' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
 DISCOIN_SYMBOL        = 'THEDISCOIN.M'
 DISCOIN_CREDIT_SYMBOL = 'THEDISCOIN.OD'
 DISCOIN_ACCESS_SYMBOL = 'THEDISCOIN.A'
 
-# ASSET_ID         = '1.3.1236'
-MONEDAPAR_ID     = ASSET_ID
-DESCUBIERTO_ID   = '1.3.1237'
+if homedir=='/home/tuti':
+  CHAIN_ID              = 'f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805'
+  DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
+  REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '5KU1QuhwwoJ5mJJuCgMXzXJx8FmhQvnPAfGgu7STJbPazUYxwHT')
+  DISCOIN_ADMIN_ID      = '1.2.22'     # discoin.admin
+  DISCOIN_ADMIN_NAME    = 'discoin-gov'
+  ASSET_ID              = '1.3.10' #'1.3.7'
+  DISCOIN_ID            = ASSET_ID
+  DISCOIN_CREDIT_ID     = '1.3.8' # DESCUBIERTO | THEDISCOIN.OD
+  DISCOIN_ACCESS_ID     = '1.3.9' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
+  DISCOIN_SYMBOL        = 'DISCOIN' #'DISCOINASSET'
+  DISCOIN_CREDIT_SYMBOL = 'DISCOINOVERDRAFT'
+  DISCOIN_ACCESS_SYMBOL = 'DISCOINENDORSE'
 
-# AVAL_1000        = '1.3.1319'
-# AVAL_10000       = '1.3.1322'
-# AVAL_30000       = '1.3.1320'
-# AVAL_100000      = '1.3.1321'
-# ALL_AVAL_TYPES   = [AVAL_1000, AVAL_10000, AVAL_30000, AVAL_100000]
-
-# ALL_TRACKED_ASSETS = ALL_AVAL_TYPES + [MONEDAPAR_ID, DESCUBIERTO_ID]
-# ALL_VALID_ASSETS   = ALL_AVAL_TYPES + [MONEDAPAR_ID]
+if str(os.environ.get('PROD', '0')) == '1':
+  CHAIN_ID              = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8';
+  DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
+  REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '')
+  DISCOIN_ADMIN_ID      = '1.2.1105469'     # discoin.admin
+  DISCOIN_ADMIN_NAME    = 'discoin-gov'
+  ASSET_ID              = '1.3.4621'
+  DISCOIN_ID            = ASSET_ID
+  DISCOIN_CREDIT_ID     = '1.3.4622' # DESCUBIERTO | THEDISCOIN.OD
+  DISCOIN_ACCESS_ID     = '1.3.4623' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
+  DISCOIN_SYMBOL        = 'DISCOIN'
+  DISCOIN_CREDIT_SYMBOL = 'DISCOIN.IBALANCE'
+  DISCOIN_ACCESS_SYMBOL = 'DISCOIN.ENDORSE'
 
 ALL_TRACKED_ASSETS  = [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID]
 ALL_VALID_ASSETS    = [DISCOIN_ID, DISCOIN_ACCESS_ID]
-#CHAIN_ID         = '2cfcf449d44f477bc8415666766d2258aa502240cb29d290c1b0de91e756c559'
-CHAIN_ID = 'bde617520673d18e67db5d7060ca2740f80e28093519c30176044c8d4a227e73'
 
-if homedir=='/home/tuti':
-  CHAIN_ID = 'f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805'
 
 def ref_block(block_id):
   block_num    = block_id[0:8]

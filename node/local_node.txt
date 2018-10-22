@@ -6,6 +6,7 @@ programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json g
 RUN WALLET:
 programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
 
+programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
 
 
 ---------------------------------------------
