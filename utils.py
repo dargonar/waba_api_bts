@@ -63,6 +63,7 @@ if str(os.environ.get('PROD', '0')) == '1':
 ALL_TRACKED_ASSETS  = [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID]
 ALL_VALID_ASSETS    = [DISCOIN_ID, DISCOIN_ACCESS_ID]
 
+print ('-----using:', REGISTER_PRIVKEY)
 
 def ref_block(block_id):
   block_num    = block_id[0:8]
