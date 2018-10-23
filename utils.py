@@ -64,7 +64,7 @@ ALL_TRACKED_ASSETS  = [DISCOIN_ID, DISCOIN_CREDIT_ID, DISCOIN_ACCESS_ID]
 ALL_VALID_ASSETS    = [DISCOIN_ID, DISCOIN_ACCESS_ID]
 
 print ('-----using:', REGISTER_PRIVKEY)
-
+print ('-----chain_id:', CHAIN_ID)
 def ref_block(block_id):
   block_num    = block_id[0:8]
   block_prefix = block_id[8:16]

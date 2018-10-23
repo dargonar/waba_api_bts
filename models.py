@@ -39,6 +39,7 @@ naming_convention = {
 
 def get_engine():
   strconn = DB_URL
+  print (' =========== models.py :: DB_URL: ', DB_URL)
   return create_engine(strconn, echo=False, poolclass=NullPool, encoding='utf8')
 
 def get_metadata():
@@ -72,8 +73,8 @@ def get_or_create(session, model, **kwargs):
     return instance, True
 
 class TimestampMixin(object):
-  created_at = Column(DateTime, default=datetime.utcnow(), nullable=False, index=True)
-  updated_at = Column(DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False, index=True)
+  created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+  updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False, index=True)
 
   def older_than(self, delta):
     return datetime.utcnow() - self.created_at > delta
