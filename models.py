@@ -39,7 +39,7 @@ naming_convention = {
 
 def get_engine():
   strconn = DB_URL
-  print (' =========== models.py :: DB_URL: ', DB_URL)
+  #print (' =========== models.py :: DB_URL: ', DB_URL)
   return create_engine(strconn, echo=False, poolclass=NullPool, encoding='utf8')
 
 def get_metadata():
