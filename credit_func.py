@@ -5,7 +5,7 @@ from ops_func import *
 from utils import ALL_TRACKED_ASSETS, DISCOIN_SYMBOL, DISCOIN_CREDIT_SYMBOL, DISCOIN_ACCESS_SYMBOL, DISCOIN_ADMIN_NAME, REGISTER_PRIVKEY
 
 wifs = {
-  # 'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9'
+  #'discoin.admin'    : '5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9',
   DISCOIN_ADMIN_NAME   : REGISTER_PRIVKEY
 }
 
@@ -531,14 +531,46 @@ if __name__ == '__main__':
 #     "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
 #     "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
 #   )
-  y = multisig_change_keys(
-    "discoin.biz4",
-    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
-    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
-    "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2"
-  )
+  #y = multisig_change_keys(
+  #  "discoin.biz4",
+  #  "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
+  #  "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2",
+  #  "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2"
+  #)
 
   #accounts_to_issue = {
   #  "moneda-par.elmercado"    : 30000
   #}
   #multisig_set_overdraft(accounts_to_issue)
+  init([])
+  new_options = {
+	      "max_supply": "100000000000",
+	      "market_fee_percent": 0,
+	      "max_market_fee": "0",
+	      "issuer_permissions": 79,
+	      "flags": 4,
+	      "core_exchange_rate": {
+	        "base": {
+	          "amount": 100000,
+	          "asset_id": "1.3.0"
+	        },
+	        "quote": {
+	          "amount": 1,
+	          "asset_id": "1.3.2"
+	        }
+	      },
+	      "whitelist_authorities": [],
+	      "blacklist_authorities": [],
+	      "whitelist_markets": [],
+	      "blacklist_markets": [],
+	      "description": "DISCOIN - Local Businesses' discounts' based Currency",
+	      "extensions": []
+	    }
+	   
+	
+  asset_update(
+	  account_id('discoin.admin'), 
+	  assets['THEDISCOIN.M']['id'],
+	  new_options, 
+	  wif=[wifs['discoin.admin']]
+	)
