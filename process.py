@@ -171,7 +171,8 @@ def do_process_2():
       q = q.order_by(BusinessCredit.id)
       q = q.limit(10)
       for t in q.all():
-        system_issue_credit(t, reserve_fund)
+        if try_int(reserve_fund)>0:
+          system_issue_credit(t, reserve_fund)
         t.processed = 1
         db.commit()
 
