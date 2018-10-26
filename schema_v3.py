@@ -692,7 +692,7 @@ class Query(graphene.ObjectType):
     if not account_name: raise
 
     print ('ACA ESTYO cache.get_account_id'  )
-    if not account_name.startswith(ACCOUNT_PREFIX):
+    if (not account_name.startswith(ACCOUNT_PREFIX) and account_name!=DISCOIN_ADMIN_NAME) or account_name==(ACCOUNT_PREFIX+'subacc1'):
       account_name = ACCOUNT_PREFIX+account_name
     account_id = cache.get_account_id(account_name)
     print ('OSHE MIRA ', account_id  )
