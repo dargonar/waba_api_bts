@@ -544,19 +544,19 @@ if __name__ == '__main__':
   #multisig_set_overdraft(accounts_to_issue)
   init([])
   new_options = {
-	      "max_supply": "100000000000",
+	      "max_supply": "999999999900000",
 	      "market_fee_percent": 0,
 	      "max_market_fee": "0",
 	      "issuer_permissions": 79,
 	      "flags": 4,
 	      "core_exchange_rate": {
 	        "base": {
-	          "amount": 100000,
+	          "amount": 100,
 	          "asset_id": "1.3.0"
 	        },
 	        "quote": {
 	          "amount": 1,
-	          "asset_id": "1.3.2"
+	          "asset_id": "1.3.6"
 	        }
 	      },
 	      "whitelist_authorities": [],
@@ -570,7 +570,7 @@ if __name__ == '__main__':
 	
   asset_update(
 	  account_id('discoin.admin'), 
-	  assets['THEDISCOIN.M']['id'],
+	  assets['DISCOIN2']['id'],
 	  new_options, 
 	  wif=[wifs['discoin.admin']]
 	)
