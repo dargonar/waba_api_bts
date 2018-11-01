@@ -93,7 +93,11 @@ if __name__ == '__main__':
     print( str(e))
     print( traceback.format_exc())
     return make_response(jsonify({'error': str(e)}), 500)
-  
+
+  @app.route('/status', methods=['POST', 'GET'])
+  def status():
+    return jsonify({'ok':'ok'})
+
   @app.route('/api/v3/dashboard/kpis', methods=['POST', 'GET'])
   def dashboard_kpis():
     
@@ -679,7 +683,7 @@ if __name__ == '__main__':
       'expiration'  : perm['expiration'],  
       'since'       : perm['period_start_time'],
       'interval'    : perm['withdrawal_period_sec'],
-      'claimed_this_period': : perm['claimed_this_period']
+      'claimed_this_period' : perm['claimed_this_period']
     }
     
   # Lista los business que lo hicieron subcuenta al account_id.

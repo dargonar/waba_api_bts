@@ -25,6 +25,7 @@ if str(os.environ.get('PROD', '0')) == '0':
   RPC_NODE = 'http://localhost:8090/rpc'
   if homedir=='/home/tuti':
     RPC_NODE = 'http://localhost:11011/rpc'
+print (' ---- RPC_NODE: ', RPC_NODE)
 
 class RpcError(Exception):
   def __init__(self, message, code):

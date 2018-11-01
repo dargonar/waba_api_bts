@@ -22,7 +22,7 @@ if str(os.environ.get('PROD', '0')) == '0':
   if homedir=='/home/tuti':
     WS_NODE = os.environ.get('WS_NODE', 'ws://localhost:11011/')
     
-print ('using WS_NODE =>', WS_NODE)
+print (' --- using WS_NODE =>', WS_NODE)
  
 def send_notification(account_name, message):
 
