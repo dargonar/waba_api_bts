@@ -50,13 +50,13 @@ if str(os.environ.get('PROD', '0')) == '1':
   CHAIN_ID              = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8';
   DB_URL                = os.environ.get('DB_URL', "mysql+pymysql://discoin:7rc)FE#'r6=rus~M@discoin-db-cluster.cluster-cmhexratphp1.us-west-2.rds.amazonaws.com/discoin?charset=utf8")
   REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '')
-  DISCOIN_ADMIN_ID      = '1.2.1105469'     # discoin.admin
+  DISCOIN_ADMIN_ID      = '1.2.1105469'
   DISCOIN_ADMIN_NAME    = 'discoin-gov'
-  ASSET_ID              = '1.3.4621'
+  ASSET_ID              = '1.3.4679'#'1.3.4621'
   DISCOIN_ID            = ASSET_ID
   DISCOIN_CREDIT_ID     = '1.3.4622' # DESCUBIERTO | THEDISCOIN.OD
   DISCOIN_ACCESS_ID     = '1.3.4623' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
-  DISCOIN_SYMBOL        = 'DISCOIN'
+  DISCOIN_SYMBOL        = 'DISCOIN.AR'
   DISCOIN_CREDIT_SYMBOL = 'DISCOIN.IBALANCE'
   DISCOIN_ACCESS_SYMBOL = 'DISCOIN.ENDORSE'
 
@@ -65,6 +65,8 @@ ALL_VALID_ASSETS    = [DISCOIN_ID, DISCOIN_ACCESS_ID]
 
 print ('-----using:', REGISTER_PRIVKEY)
 print ('-----chain_id:', CHAIN_ID)
+print ('-----asset', DISCOIN_SYMBOL)
+
 def ref_block(block_id):
   block_num    = block_id[0:8]
   block_prefix = block_id[8:16]
@@ -140,7 +142,15 @@ def decode_memo(memo_message, _amount, asset):
         'discount'    : 0,
         'memo'        : ''
       }
-      
+  if memo_message is None or memo_message=='None':
+     #print('--- MEMO IS:', memo_message)   
+    return {
+        '_type'       : 'transfer',
+        'bill_id'     : 0,
+        'bill_amount' : 0,
+        'discount'    : 0,
+        'memo'        : ''
+      }
   _memo = binascii.unhexlify(memo_message).decode('utf-8')
   _memo_split = _memo.split(':')
   bill_id     = '' 
