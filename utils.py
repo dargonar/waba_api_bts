@@ -33,18 +33,18 @@ DISCOIN_CREDIT_SYMBOL = 'THEDISCOIN.OD'
 DISCOIN_ACCESS_SYMBOL = 'THEDISCOIN.A'
 
 if homedir=='/home/tuti':
-  CHAIN_ID              = 'f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805'
+  CHAIN_ID              = '1d70881f06a5d2ece91313a00f7eda5e1c7a7183957f3a6539deb4aa95237fe5'
   DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
   REGISTER_PRIVKEY      = os.environ.get('REGISTER_PRIVKEY', '5KU1QuhwwoJ5mJJuCgMXzXJx8FmhQvnPAfGgu7STJbPazUYxwHT')
-  DISCOIN_ADMIN_ID      = '1.2.22'     # discoin.admin
+  DISCOIN_ADMIN_ID      = '1.2.18'     # discoin.admin
   DISCOIN_ADMIN_NAME    = 'discoin-gov'
-  ASSET_ID              = '1.3.10' #'1.3.7'
+  ASSET_ID              = '1.3.1' #'1.3.7'
   DISCOIN_ID            = ASSET_ID
-  DISCOIN_CREDIT_ID     = '1.3.8' # DESCUBIERTO | THEDISCOIN.OD
-  DISCOIN_ACCESS_ID     = '1.3.9' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
+  DISCOIN_CREDIT_ID     = '1.3.2' # DESCUBIERTO | THEDISCOIN.OD
+  DISCOIN_ACCESS_ID     = '1.3.3' # ENDORSEMENT | DISCOIN.KEY | THEDISCOIN.A
   DISCOIN_SYMBOL        = 'DISCOIN' #'DISCOINASSET'
-  DISCOIN_CREDIT_SYMBOL = 'DISCOINOVERDRAFT'
-  DISCOIN_ACCESS_SYMBOL = 'DISCOINENDORSE'
+  DISCOIN_CREDIT_SYMBOL = 'DISCOIN.IBALANCE'
+  DISCOIN_ACCESS_SYMBOL = 'DISCOIN.ENDORSE'
 
 if str(os.environ.get('PROD', '0')) == '1':
   CHAIN_ID              = '4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8';

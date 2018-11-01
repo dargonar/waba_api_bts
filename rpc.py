@@ -6,7 +6,8 @@ import requests
 import simplejson as json
 import traceback
 import logging
-
+import os
+homedir = os.environ['HOME']
 # import httplib as http_client
 # http_client.HTTPConnection.debuglevel = 1
 
@@ -20,7 +21,10 @@ import logging
 
 # RPC_NODE = os.environ.get('RPC_NODE', 'http://localhost:11011/rpc')
 RPC_NODE = 'http://10.50.10.24:8090/rpc'
-# print 'using RPC @ ', RPC_NODE
+if str(os.environ.get('PROD', '0')) == '0':
+  RPC_NODE = 'http://localhost:8090/rpc'
+  if homedir=='/home/tuti':
+    RPC_NODE = 'http://localhost:11011/rpc'
 
 class RpcError(Exception):
   def __init__(self, message, code):
