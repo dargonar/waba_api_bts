@@ -826,9 +826,12 @@ if __name__ == '__main__':
     
     asset, asset_core = rpc.db_get_assets([DISCOIN_ID, CORE_ASSET])
     withdraw_permission_claim_op = withdraw_permission_claim(perm['id'], business_id, subaccount_id, perm["withdrawal_limit"], None, CORE_ASSET)
+    #withdraw_permission_claim_op = withdraw_permission_claim(perm['id'], business_id, subaccount_id, perm["withdrawal_limit"], None, DISCOIN_ID)
+
 
     fees = rpc.db_get_required_fees([withdraw_permission_claim_op[0]] , CORE_ASSET)
-    
+    #fees = rpc.db_get_required_fees([withdraw_permission_claim_op[0]] , DISCOIN_ID)
+
     _transfer = transfer(
         DISCOIN_ADMIN_ID,
         subaccount_id,
@@ -836,11 +839,10 @@ if __name__ == '__main__':
         amount_value(fees[0]['amount'], asset_core)
       )
 
-    #  
-#     [_transfer + [withdraw_permission_claim_op[0]]]
     tx = build_tx_and_broadcast(
-      [_transfer[0]] + [withdraw_permission_claim_op[0]]
-    , None)
+        [_transfer[0]] + [withdraw_permission_claim_op[0]]
+       # [withdraw_permission_claim_op[0]]
+        , None)
 
 #     to_sign = bts2helper_tx_digest(json.dumps(tx), CHAIN_ID)
 #     signature = bts2helper_sign_compact(to_sign, REGISTER_PRIVKEY)
@@ -890,19 +892,19 @@ if __name__ == '__main__':
     print( ' == refund: ')
     print (_refund)
     
-#     fees = rpc.db_get_required_fees([_refund[0]] , CORE_ASSET)
-    fees = rpc.db_get_required_fees([_refund[0]] , DISCOIN_ID)
-    print (' == fees: ')
-    print (fees)
+    #fees = rpc.db_get_required_fees([_refund[0]] , CORE_ASSET)
+    #fees = rpc.db_get_required_fees([_refund[0]] , DISCOIN_ID)
+    #print (' == fees: ')
+    #print (fees)
     
-    _transfer = transfer(
-        DISCOIN_ADMIN_ID,
-        from_id,
-        asset_core,
-        amount_value(fees[0]['amount'], asset_core)
-      )
-    print (' == transfer: ')
-    print (_transfer)
+    #_transfer = transfer(
+    #    DISCOIN_ADMIN_ID,
+    #    from_id,
+    #    asset_core,
+    #    amount_value(fees[0]['amount'], asset_core)
+    #  )
+    #print (' == transfer: ')
+    #print (_transfer)
     
     # _transfer + _refund
     tx = build_tx_and_broadcast(
@@ -936,8 +938,8 @@ if __name__ == '__main__':
     bill_amount     = request.json.get('bill_amount')  
     bill_id         = request.json.get('bill_id')  
 
-    tx = subaccount_refund_impl(business_id, subaccount_id, _to, amount, bill_amount, bill_id)
-    
+    #tx = subaccount_refund_impl(business_id, subaccount_id, _to, amount, bill_amount, bill_id)
+    tx = {'error': 'subaccount_has_no_permission'}
     return jsonify( {'tx':tx} )
   
   # Retorna los permisos de "retiro" que tiene una cuenta en un negocio.

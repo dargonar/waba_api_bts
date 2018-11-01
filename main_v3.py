@@ -1062,6 +1062,7 @@ if __name__ == '__main__':
     if not tx:
       tx = request.json
       
+    #res = {'error':'jejeje'} 
     res = rpc.network_broadcast_transaction_sync(tx)
     print json.dumps(res, indent=2)
     return jsonify( {'res':res} )
@@ -1101,6 +1102,7 @@ if __name__ == '__main__':
     print ' ===> SIGNED TX:'
     print json.dumps(tx, indent=2)
     
+    #res = {'error':'jejeje'} 
     res = rpc.network_broadcast_transaction_sync(tx)
     print json.dumps(res, indent=2)
     return jsonify( {'res':res} )
