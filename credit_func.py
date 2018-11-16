@@ -26,7 +26,7 @@ def init(other_accounts):
   global assets
   global assets_by_id
 #   assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0','1.3.1236','1.3.1237','1.3.1319','1.3.1322','1.3.1320','1.3.1321']) }
-  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+ALL_TRACKED_ASSETS) }
+  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+ALL_TRACKED_ASSETS+['1.3.4621']) }
   
 #   print '=================================================='
 #   print 'credit_func::init'
@@ -303,7 +303,7 @@ def multisig_change_keys(account, owner, active, memo_key):
     'key_auths'        : [[owner,1]], 
     'address_auths'    : []
   }
-  
+  print (' -- DISCOIN_ADMIN_NAME:', DISCOIN_ADMIN_NAME)
   ops = account_update(
     account_id(account), 
     owner_auth, 
@@ -538,39 +538,63 @@ if __name__ == '__main__':
   #  "BTS5jeqUg2MZ3beav5u7mb56ZMH65LKiAoe7QvJWmHxkjwdBVj3L2"
   #)
 
+  pass
+  #y = multisig_change_keys(
+#		"discoin.julian.discoin",
+#		"BTS65TGTWFzBr1wsYbjWRDu6znMP7DfeJkW7PkDSFd5fa64AKe75u",
+#		"BTS5Q2Ba5kVSZ7LNRjsJFqWBbW3bbdfZmizQGgAmx7h3WbL1zDTG6",
+#		"BTS8B4WqePt1G5wLiCWsU7rd1LKzeEhfctdpvCh94RGKqtgMLcecf"
+#	)
+
   #accounts_to_issue = {
   #  "moneda-par.elmercado"    : 30000
   #}
   #multisig_set_overdraft(accounts_to_issue)
-  init([])
-  new_options = {
-	      "max_supply": "999999999900000",
-	      "market_fee_percent": 0,
-	      "max_market_fee": "0",
-	      "issuer_permissions": 79,
-	      "flags": 4,
-	      "core_exchange_rate": {
-	        "base": {
-	          "amount": 100,
-	          "asset_id": "1.3.0"
-	        },
-	        "quote": {
-	          "amount": 1,
-	          "asset_id": "1.3.6"
-	        }
-	      },
-	      "whitelist_authorities": [],
-	      "blacklist_authorities": [],
-	      "whitelist_markets": [],
-	      "blacklist_markets": [],
-	      "description": "DISCOIN - Local Businesses' discounts' based Currency",
-	      "extensions": []
-	    }
+  #init([])
+  #new_options = {
+#	      "max_supply": "999999999900000",
+#	      "market_fee_percent": 0,
+#	      "max_market_fee": "0",
+#	      "issuer_permissions": 79,
+#	      "flags": 4,
+#	      "core_exchange_rate": {
+#	        "base": {
+#	          "amount": 100,
+#	          "asset_id": "1.3.0"
+#	        },
+#	        "quote": {
+#	          "amount": 1,
+#	          "asset_id": "1.3.6"
+#	        }
+#	      },
+#	      "whitelist_authorities": [],
+#	      "blacklist_authorities": [],
+#	      "whitelist_markets": [],
+#	      "blacklist_markets": [],
+#	      "description": "DISCOIN - Local Businesses' discounts' based Currency",
+#	      "extensions": []
+#	    }
 	   
 	
-  asset_update(
-	  account_id('discoin.admin'), 
-	  assets['DISCOIN2']['id'],
-	  new_options, 
-	  wif=[wifs['discoin.admin']]
-	)
+#  asset_update(
+#	  account_id('discoin.admin'), 
+#	  assets['DISCOIN2']['id'],
+#	  new_options, 
+#	  wif=[wifs['discoin.admin']]
+#	)
+
+#  set_fees_and_broadcast(
+#       [ [
+#        47,{
+#          "issuer": "1.2.1105469",
+#          "asset_id": "1.3.4621",
+#          "amount_to_claim": {
+#            "amount": 414000000,
+#            "asset_id": "1.3.0"
+#          }
+#        }
+#      ]]
+#      ,
+#     [wifs[DISCOIN_ADMIN_NAME]],
+#     '1.3.0'   )
+  
