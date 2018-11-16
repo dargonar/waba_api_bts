@@ -68,6 +68,11 @@ def run_again():
   ws.on_open = on_open
   ws.run_forever()  
 
+def get_message(op):
+  if 'memo' not in op: return None
+  if 'message' not in op['memo']: return None
+  return op['memo']['message']
+
 def on_message(ws, message):
   #print message
   m = json.loads(message)
@@ -97,14 +102,24 @@ def on_message(ws, message):
           
           asset = cache.get_asset(ASSET_ID)
           
+          memo       = get_message(op[1])
+          is_airdrop = False
+          if memo and memo[:10] == '~ad:1'.encode('hex'):
+            is_airdrop = True
           for i in xrange(len(froms)):
             f = real_name(froms[i]['name'])
             t = real_name(tos[i]['name'])
             a = amount_value(amounts[i],asset)
             
-            msg = '{0} te ha enviado {1} DSC'.format(f, a)
-            print( t, msg)
-            send_notification(t, msg)
+            msg   = '{0} te ha enviado {1} DSC'.format(f, a)
+            if is_airdrop:
+              msg1 = u'Bienvenido a Discoin App! Te acreditamos 100 DISCOINS para que puedas usarlos en comercios de la ciudad.'
+              send_notification(t, msg1)
+              # msg2 = u'Venite a Subway de calle 12 de 12hs a 15hs a gastarte tus DISCOINs!'
+              # send_notification(t, msg2)
+            else:
+              # print( t, msg)
+              send_notification(t, msg)
       
       except Exception as ex:
         print (ex)

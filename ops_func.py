@@ -15,13 +15,13 @@ def amount_of(asset, amount):
   return {'asset_id' : asset['id'], 'amount': int_amount}
 
 def set_fees(ops, pay_in):
-#   print ' ================ ops_func::set_fees #1'
-#   print ' == ops:'
-#   print json.dumps(ops, indent=2)
-#   print ' == pay_in:'
-#   print json.dumps(pay_in, indent=2)
+  # print ' ================ ops_func::set_fees #1'
+  # print ' == ops:'
+  # print json.dumps(ops, indent=2)
+  # print ' == pay_in:'
+  # print json.dumps(pay_in, indent=2)
   fees = rpc.db_get_required_fees(ops, pay_in)
-#   print ' ================ ops_func::set_fees #2'
+  # print ' ================ ops_func::set_fees #2'
   for i in range(len(ops)):
   #for i in xrange(len(ops)):
 #     print ' ================ ops_func::set_fees #3'
