@@ -168,7 +168,7 @@ class WithdrawPermission(graphene.ObjectType):
   to_                         = graphene.Field(lambda:Account, name='to')
   withdrawal_period_sec       = graphene.Int()
   periods_until_expiration    = graphene.Int()
-  period_start_time           = graphene.Int()
+  period_start_time           = graphene.String()
   type_                       = graphene.String(name='type')
   
   def __init__(self, ops):
@@ -177,7 +177,7 @@ class WithdrawPermission(graphene.ObjectType):
     print (ops)
 
 #     main_op = ops[-1 if len(ops)==3 else -2].oph['op']
-    self.main_op = ops[-1].oph['op']
+    self.main_op = ops['op']
     # This is the main OP (ops[1])
     #
     # [ Transfer,  
@@ -190,8 +190,8 @@ class WithdrawPermission(graphene.ObjectType):
     # self.otype = 'down' if main_op[0] == 38 else 'up'
     
     # Determine id (important for history)
-    self.oph = ops[0].oph
-    self.op  = ops[0].oph['op'][1]
+    self.oph = ops
+    self.op  = ops['op']
     
   class Meta:
     interfaces = (Operation, )
@@ -495,12 +495,26 @@ templates = [
     (7  , []),
   ],
   [ WithdrawPermission,
-    (0  , []),
-    (25 , [])
+    #(0  , []),
+    (25 , []),
+    (0, [])
   ],
+#  [ WithdrawPermission,
+#   (25 , []),
+#   (0, []),
+#   (25 , []),
+#   (0, [])
+# ],
+# [ WithdrawPermission,
+#   (25 , []),
+#   (0, []),
+#   (0, []),
+#   (25 , [])
+# ],
   [ WithdrawPermission,
-    (0  , []),
-    (26 , [])
+    #(0  , []),
+    (26 , []),
+    (0, [])
   ],
   [ WithdrawPermissionClaim,
     (0  , []),
@@ -610,6 +624,8 @@ class Account(graphene.ObjectType):
         
       elif op[0] == 38:
         return OverrideTransfer(oph)  
+      elif op[0] == 25:
+        return WithdrawPermission(oph)
       else:
         return NoDetailOp(oph)
 
