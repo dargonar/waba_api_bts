@@ -150,7 +150,7 @@ class Transfer(Base, TimestampMixin):
   trx_in_block = Column(Integer)
   op_in_trx    = Column(Integer)
   
-  memo         = Column(String(32))
+  memo         = Column(String(256))
 
   processed    = Column(Integer, default=0, index=True)
   
