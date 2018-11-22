@@ -1,0 +1,54 @@
+API
+------------------------------------------------
+
+cd ~/bitshares-core && programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+
+cd ~/bitshares-core && programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id bde617520673d18e67db5d7060ca2740f80e28093519c30176044c8d4a227e73 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
+
+-- @tuti
+cd ~/bitshares && programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 1d70881f06a5d2ece91313a00f7eda5e1c7a7183957f3a6539deb4aa95237fe5 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
+
+
+cd ~/discoin_api && PROD=1 REGISTER_PRIVKEY=5JxTiQ7hbAqVqvCsdZxzGBa6BsyypyFBTH9T499nyJMRz9PqZeW python main_v3.py
+cd ~/discoin_api && PROD=0 python main_v3.py
+cd ~/api/waba_api_bts && PROD=0 python main_v3.py
+
+cd ~/discoin_api && PROD=1 REGISTER_PRIVKEY=5JxTiQ7hbAqVqvCsdZxzGBa6BsyypyFBTH9T499nyJMRz9PqZeW python import.py
+cd ~/discoin_api && PROD=0 python import.py
+cd ~/api/waba_api_bts && PROD=0 python import.py
+
+cd ~/discoin_api && PROD=1 REGISTER_PRIVKEY=5JxTiQ7hbAqVqvCsdZxzGBa6BsyypyFBTH9T499nyJMRz9PqZeW python process.py
+cd ~/discoin_api && PROD=0 python process.py
+cd ~/api/waba_api_bts && PROD=0 python process.py
+
+cd ~/discoin_api && PROD=1 REGISTER_PRIVKEY=5JxTiQ7hbAqVqvCsdZxzGBa6BsyypyFBTH9T499nyJMRz9PqZeW python notificator.py
+
+cd ~/discoin_api && PROD=1 REGISTER_PRIVKEY=5JxTiQ7hbAqVqvCsdZxzGBa6BsyypyFBTH9T499nyJMRz9PqZeW python3 api.py
+cd ~/discoin_api && PROD=0 python3 api.py
+cd ~/api/waba_api_bts && PROD=0 python3 api.py
+
+mysql -u root -p
+
+
+
+WEBSITE
+------------------------------------------------
+~/discoin/merged$ PORT=8080 HOST=127.0.0.1  npm start
+
+
+NODE
+------------------------------------------------
+~/bitshares/bitshares-core$ ./programs/witness_node/witness_node --plugins "account_history" --max-ops-per-account 100
+
+~/bitshares/bitshares-core$ programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
+
+(en nodo disocin)
+cd ~/bitshares-core && programs/cli_wallet/cli_wallet --wallet-file remote-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://10.50.10.24:8090 -u 'kkuser' -p 'supersecret'
+
+(en nodo par)
+~/bitshares/bitshares-core$ programs/cli_wallet/cli_wallet --wallet-file remote-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
+
+network -> discoin-vpc
+subnet  -> public
+
+ssh -i ~/discoin_bitshares.pem ubuntu@10.50.10.24
