@@ -64,7 +64,7 @@ def transfer_from_op(op, ts, new_block_id, block_num, trx_in_block, op_in_trx):
     trx_in_block = trx_in_block,
     op_in_trx    = op_in_trx,
     timestamp    = parse(ts),
-    memo         = memo[:32] if memo else None,
+    memo         = memo[:256] if memo else None,
     processed    = 0
   )
   
