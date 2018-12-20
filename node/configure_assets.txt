@@ -1,0 +1,66 @@
+programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+
+//// programs/witness_node/witness_node --enable-stale-production --seed-nodes "[]
+
+programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+
+// nuevo
+programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id bde617520673d18e67db5d7060ca2740f80e28093519c30176044c8d4a227e73 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+
+
+
+>> https://github.com/cryptonomex/graphene/wiki/private-testnet
+
+
+import_key nathan "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"
+import_balance nathan ["5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"] true
+upgrade_account nathan true
+
+import_key init0 "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"
+transfer nathan init0 100000 BTS "here is the cash" true
+
+register_account discoin-gov BTS6bM4zBP7PKcSmXV7voEdauT6khCDGUqXyAsq5NCHcyYaNSMYBk BTS6bM4zBP7PKcSmXV7voEdauT6khCDGUqXyAsq5NCHcyYaNSMYBk init0 init0 0 true
+transfer nathan discoin.admin 100000 BTS "here is the cash" true
+import_key discoin.admin 5JQGCnJCDyraociQmhDRDxzNFCd8WdcJ4BAj8q1YDZtVpk5NDw9
+upgrade_account discoin.admin true
+
+create_asset discoin.admin THEDISCOIN 2 {"max_supply": "100000000000","market_fee_percent": 0,"max_market_fee": "0","issuer_permissions": 79,"flags": 4,"core_exchange_rate": { "base": { "amount": 100000, "asset_id": "1.3.0" }, "quote": { "amount": 1, "asset_id": "1.3.1" } }, "whitelist_authorities": [], "blacklist_authorities": [], "whitelist_markets"    : [], "blacklist_markets": [], "description": "DISCOIN - Local Businesses' discounts' based Currency", "extensions": [] } null true
+
+create_asset discoin.admin THEDISCOIN.M 2 {"max_supply": "100000000000","market_fee_percent": 0,"max_market_fee": "0","issuer_permissions": 79,"flags": 4,"core_exchange_rate": { "base": { "amount": 100000, "asset_id": "1.3.0" }, "quote": { "amount": 1, "asset_id": "1.3.1" } }, "whitelist_authorities": [], "blacklist_authorities": [], "whitelist_markets"    : [], "blacklist_markets": [], "description": "DISCOIN - Local Businesses' discounts' based Currency", "extensions": [] } null true
+
+create_asset discoin.admin THEDISCOIN.OD 0 {"max_supply": "1000000000","market_fee_percent": 0,"max_market_fee": "0","issuer_permissions": 79,"flags": 14,"core_exchange_rate": { "base": { "amount": 100000, "asset_id": "1.3.0" }, "quote": { "amount": 100, "asset_id": "1.3.1" } }, "whitelist_authorities": ["1.2.18"], "blacklist_authorities": [], "whitelist_markets"    : [], "blacklist_markets": [], "description": "DISCOIN OVERDRAFT- Discoin Local Currency Business Credit", "extensions": [] } null true
+
+create_asset discoin.admin THEDISCOIN.A 0 {"max_supply": "1000000000","market_fee_percent": 0,"max_market_fee": "0","issuer_permissions": 79,"flags": 78,"core_exchange_rate": { "base": { "amount": 100000, "asset_id": "1.3.0" }, "quote": { "amount": 1, "asset_id": "1.3.1" } }, "whitelist_authorities": [], "blacklist_authorities": ["1.2.18"], "whitelist_markets"    : [], "blacklist_markets": [], "description": "DISCOIN ACCESS- Endorsement token", "extensions": [] } null true
+
+
+issue_asset discoin.admin 1000000000 THEDISCOIN.A memo true
+
+
+
+
+------------------------
+cd ~/bitshares && programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+cd ~/bitshares && programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id f5a42a1c16cf678773313f5f94ef7ebb69257c5f33a147aa8c4ac0fa5e451805 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+cd ~/api/waba_api_bts && python main_v3.py
+cd ~/api/waba_api_bts && python import.py
+cd ~/api/waba_api_bts && python process.py
+cd ~/api/waba_api_bts && python notificator.py
+cd ~/api/waba_api_bts && python3 api.py
+
+
+sudo apt-get update
+sudo apt-get install mysql-server
+mysql_secure_installation
+
+mysql -u root -p
+use discoin;
+source discoin_bkp.sql ;
+mysqldump -u root -p discoin > discoin.sql
+
+scp -i ~/aws/bitshares_fork_1.pem ~/discoin/ddbb/discoin.zip ubuntu@34.212.171.239:~/ddbb
+
+
+
+tripa
+trufa canguro silla empresa pálido surgir sonido radical digno jamón veneno nevera
+5KUKwMwfpj8eRuEfbL3p8JMoiErfnFUxdNYNtJ1PfZG2c5TTV3J

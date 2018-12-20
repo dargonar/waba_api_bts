@@ -10,8 +10,8 @@ from distutils.extension import Extension
   
 # iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/ubuntu/bitshares_2_0_180612/libraries')
 # lroot  = os.environ.get('GPH_ROOT_LIB', '/home/ubuntu/bitshares_2_0_180612/libraries')
-iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/ubuntu/bitshares-core/libraries')
-lroot  = os.environ.get('GPH_ROOT_LIB', '/home/ubuntu/bitshares-core/libraries')
+iroot  = os.environ.get('GPH_ROOT_INCLUDE', '/home/tuti/bitshares2/libraries')
+lroot  = os.environ.get('GPH_ROOT_LIB', '/home/tuti/bitshares2/libraries')
 mt     = os.environ.get('GPH_BOOST_POSTFIX', '')
 debug  = os.environ.get('GPH_DEBUG','_debug')
 

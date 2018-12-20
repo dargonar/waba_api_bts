@@ -714,41 +714,45 @@ if __name__ == '__main__':
   
   def subaccount_add_or_update_create_impl(business_id, subaccount_id, limit, _from, period, periods):
     
-    print( ' == subaccount_add_or_update_create_impl #1')
+    # print( ' == subaccount_add_or_update_create_impl #1')
     # Check if business has credit.
     p = rpc.db_get_account_balances(business_id, [DISCOIN_CREDIT_ID])
     if p[0]['amount'] <= 0:
       return {'error':'business_has_no_credit'}
     # Check if subaccount is valid account.
-    print( ' == subaccount_add_or_update_create_impl #2')
+    # print( ' == subaccount_add_or_update_create_impl #2')
     subaccounts = rpc.db_get_accounts([subaccount_id])
     if not subaccounts or len(subaccounts)==0:
       return {'error': 'subaccount_not_exists'}
     
-    print( ' == subaccount_add_or_update_create_impl #2')
+    # print( ' == subaccount_add_or_update_create_impl #2')
     # Validamos que la subaccount_id no tenga ya permisos de withdraw por parte del comercio:
     perm = get_withdraw_permission(business_id, subaccount_id)
 #     if perm:
 #       return {'error': 'subaccount_id_already_has_permission'}
       
-    print( ' ======================================================')
-    print (' ====== subaccount_add_or_update_create_impl #3')
+    # print( ' ======================================================')
+    # print (' ====== subaccount_add_or_update_create_impl #3')
     asset, asset_core = rpc.db_get_assets([DISCOIN_ID, CORE_ASSET])
     
     # ~ie:<%y%m%d>:<1.2.1526>:25000
     if not _from:
-#       _from = datetime.utcnow().strftime('%y%m%d')
       _from = (datetime.utcnow()+timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S')
-#       _from = '2018-04-24T00:00:00'
+      # print(' ----- SUBCUENTA::datetime.utcnow::', _from) 
     else:
       _from = datetime.fromtimestamp(try_int(_from)).strftime('%Y-%m-%dT%H:%M:%S')
+      # print(' ----- SUBCUENTA::datetime.fromtimestamp:', _from) 
     if not period:
       period = 86400 # 1 day in seconds
     if not periods:
       periods = 365 # 365 periods = 1 year
     
-    print( ' ======================================================')
-    print (' ====== subaccount_add_or_update_create_impl #4')
+    if homedir=='/home/tuti':
+      # print(' ----- SUBCUENTA::datetime.utcfromtimestamp:[PRE]', _from) 
+      _from_loaded = datetime.strptime(_from, '%Y-%m-%dT%H:%M:%S')
+      # print(' ----- SUBCUENTA::datetime.utcfromtimestamp:[LOADED]', _from_loaded) 
+      _from        = (_from_loaded+timedelta(hours=3)).strftime('%Y-%m-%dT%H:%M:%S')
+      # print(' ----- SUBCUENTA::datetime.utcfromtimestamp:[POST]', _from) 
     my_amount = reverse_amount_value(limit, asset)
     my_amount_asset = {
       'amount'  : my_amount,
@@ -765,10 +769,10 @@ if __name__ == '__main__':
     
     fees = rpc.db_get_required_fees([withdraw_permission_op[0]] , CORE_ASSET)
     
-    print( ' == fees: ')
-    print (fees)
-    print (' == Calc fee')
-    print (amount_value(fees[0]['amount'], asset_core))
+    # print( ' == fees: ')
+    # print (fees)
+    # print (' == Calc fee')
+    # print (amount_value(fees[0]['amount'], asset_core))
     
     _transfer = transfer(
         DISCOIN_ADMIN_ID,
@@ -1364,7 +1368,8 @@ if __name__ == '__main__':
       pi, is_new = get_or_create(db, PushInfo,
         name  = request.json.get('name'),
       )
-      pi.push_id = request.json.get('push_id')
+      pi.push_id    = request.json.get('push_id')
+      pi.version    = request.json.get('version', '0')
       pi.updated_at = datetime.utcnow()
       db.add(pi)
       db.commit()
@@ -1393,13 +1398,11 @@ if __name__ == '__main__':
     print (pk)
     
     tx = extern_sign_tx(tx, priv_key)    
-
-#     res = rpc.network_broadcast_transaction_sync(tx)
-#     print (json.dumps(res, indent=2))
-#     print (' -- sign_and_push_tx')
-#     print (json.dumps(tx, indent=2))
-    res = extern_push_tx(tx['tx'])
-    return jsonify( res )
+    # res = extern_push_tx(tx['tx'])
+    # return jsonify( res )
+    res = rpc.network_broadcast_transaction_sync(tx['tx'])
+    print( json.dumps(res, indent=2))
+    return jsonify( {'res':res} )
 
   
 #   @app.route('/api/v3/get_global_properties', methods=['GET'])
@@ -1796,12 +1799,13 @@ if __name__ == '__main__':
 #       logging.error(traceback.format_exc())
 #       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
   
-  @app.route('/api/v3/business/<account_id>/transactions/list/extended', methods=['GET', 'POST'])
-  def get_business_transactions_extended(account_id):
-    return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id) } )
+  @app.route('/api/v3/business/<account_id>/transactions/list/<skip>/<limit>', methods=['GET', 'POST'])
+  def get_business_transactions_extended(account_id, skip, limit):
+    # return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id, skip, limit) } )
+    return jsonify( get_business_transactions_extended_impl(account_id, skip, limit) )
  
   
-  def get_business_transactions_extended_impl(account_id):
+  def get_business_transactions_extended_impl(account_id, skip=0, limit=20):
     
     if not account_id:
       return make_response(jsonify({'error': 'NO_ACCOUNT_ID_PROVIDED'}), 500)
@@ -1817,103 +1821,19 @@ if __name__ == '__main__':
       my_or = or_(Transfer.from_id.in_(subaccounts), Transfer.to_id.in_(subaccounts))
       q = q.filter(my_or)
       q = q.order_by(Transfer.id.desc())
-      return [ c.to_dict_ex(main_asset) for c in q.all()]
+      total = q.count()
+      q = q.limit(limit).offset(skip)
+      return { 'txs': [ c.to_dict_ex(main_asset) for c in q.all()], 'total' : total }
     
     # 3- retornamos formateado
     
   @app.route('/api/v3/business/<account_id>/transactions/list', methods=['GET', 'POST'])
   def get_business_transactions(account_id):
 #     return jsonify( { 'txs' : get_business_transactions_impl(account_id) } )
-    return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id) } )
+    # return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id) } )
+    return jsonify( get_business_transactions_extended_impl(account_id) )
     
-  def get_business_transactions_impl(account_id):
-    
-    stop    = 0
-    limit   = 100
-    start   = 0
-    
-    print ('[START] rpc.history_get_relative_account_history (%s %s %s)' % (stop, limit, start))
-    raw_ops = rpc.history_get_relative_account_history(account_id, stop, limit, start)
-    print ('[END] rpc.history_get_relative_account_history ')
-
-    txs = []
-    # Group ops by tx
-    ops_in_tx = []
-    for o in raw_ops:
-      ops_in_tx.append(o)
-      if o['op_in_trx'] == 0:
-        txs.append(ops_in_tx[::-1])
-        ops_in_tx = []
-
-    def get_transfer(op, _type, block_num, tx_id):
-      asset = cache.get_asset(op['amount']['asset_id'])
-      my_amount = amount_value( str(op['amount']['amount']), asset)
-      _from = cache.get_account(op['from'])
-      _to   = cache.get_account(op['to'])
-      _memo = binascii.unhexlify(op['memo']['message']).decode('utf-8')
-      block = cache.get_block_header(block_num)
-#       {
-#         'quantity' : amount_value( str(op['amount']['amount']), asset),
-#         'asset'    : asset
-#       },
-      
-#      '~re:{0}:{1}'.format( bill_amount, bill_id)
-#      '~di:{0}:{1}'.format( bill_amount, bill_id)
-      print(' -- _memo', _memo)
-      _memo_split = _memo.split(':')
-      bill_id     = '' 
-      bill_amount = 0
-      if len(_memo_split)>2:
-        # ~re:1500:the bill
-        bill_amount = Decimal(try_float(_memo_split[1]))
-        bill_id     = _memo_split[2] 
-      discount = 0
-      if bill_amount>0:
-        print(' -- my_amount', my_amount)
-        discount = round_decimal(Decimal(my_amount)*100/bill_amount)
-      return {
-        'date'          : block['timestamp'],
-        'discount'      : discount,
-        'bill_amount'   : bill_amount,
-        'bill_id'       : bill_id, #'0001-0000222233335555',
-        'from'          : {'id':_from['id'], 'name':_from['name']},
-        'to'            : {'id':_to['id'], 'name':_to['name']},
-        'amount'        : my_amount,
-        'memo'          : {
-                            'message'   : _memo,
-                            'original'  : op['memo']['message']
-#                             'from'    : op['memo']['from'],
-#                             'to'      : op['memo']['to'],
-#                             'nonce'   : op['memo']['nonce'],
-#                             'message' : op['memo']['message']
-                           },
-        'type'          : _type
-      }
-
-    def process_transfer(op, block_num, tx_id):
-      refund_prefix    = binascii.hexlify('~re:'.encode()).decode('utf-8')
-      discount_prefix  = binascii.hexlify('~di:'.encode()).decode('utf-8')
-      if 'memo' in op and op['memo'] and op['memo']['message']:
-        _type = ''
-        if op['memo']['message'][:8]==refund_prefix:
-          _type = 'refund' 
-        if op['memo']['message'][:8]==discount_prefix:
-          _type = 'discount' 
-        if _type=='':
-          return None
-        return get_transfer(op, _type, block_num, tx_id)
-      return None
-    
-    history = []
-    for o in txs:
-      if int(o[0]['op'][0])!=0:
-        continue
-      tx = process_transfer(o[0]['op'][1], o[0]['block_num'], o[0]['id'])
-      if tx:
-        history.append(tx)
-      
-    return history
-      
+  
   @app.route('/api/v3/get_fees_for_tx', methods=['POST'])
   def get_fees_for_tx():
     tx    = request.json.get('tx')

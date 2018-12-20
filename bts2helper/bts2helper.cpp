@@ -18,7 +18,9 @@
 #include <fc/crypto/sha512.hpp>
 #include <fc/crypto/sha256.hpp>
 
-#include <graphene/chain/protocol/protocol.hpp>
+// #include <graphene/chain/protocol/protocol.hpp>
+#include <graphene/chain/protocol/fee_schedule.hpp>
+#include <graphene/chain/protocol/block.hpp>
 #include <graphene/chain/protocol/transaction.hpp>
 #include <graphene/chain/protocol/account.hpp>
 #include <graphene/chain/protocol/memo.hpp>

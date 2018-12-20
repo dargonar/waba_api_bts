@@ -26,7 +26,8 @@ def init(other_accounts):
   global assets
   global assets_by_id
 #   assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0','1.3.1236','1.3.1237','1.3.1319','1.3.1322','1.3.1320','1.3.1321']) }
-  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+ALL_TRACKED_ASSETS+['1.3.4621']) }
+  # assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+ALL_TRACKED_ASSETS+['1.3.4621']) }
+  assets = { a['symbol']:a for a in rpc.db_get_assets(['1.3.0']+ALL_TRACKED_ASSETS) }
   
 #   print '=================================================='
 #   print 'credit_func::init'

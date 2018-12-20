@@ -23,27 +23,69 @@ if str(os.environ.get('PROD', '0')) == '0':
     WS_NODE = os.environ.get('WS_NODE', 'ws://localhost:11011/')
     
 print (' --- using WS_NODE =>', WS_NODE)
- 
-def send_notification(account_name, message):
 
-  player_id = None
+def push_notification(account_name, message, data):
+
+  push_info = None
   with session_scope() as db:
-    pi = db.query(PushInfo).filter(PushInfo.name == account_name).first()
-    player_id = pi.push_id if pi else None
-      
-  if not player_id:
+    push_info = db.query(PushInfo).filter(PushInfo.name == account_name).first()
+    # player_id = pi.push_id if pi else None
+    if push_info:
+      db.expunge(push_info)
+
+  if not push_info and push_info.version:
     print ('No encontre el player_id de =>', account_name)
     return
   
-  print ("FOUND =>", account_name, "=", player_id )
+  print ("FOUND =>", account_name, "=", push_info.push_id )
   
   header = {"Content-Type": "application/json; charset=utf-8",
             "Authorization": "Basic YmRjMjQ2N2UtZDZjNi00ZTM4LTgxMzQtNTZlMTVmZTU1N2I4"}
 
+  payload_app_id = "74512457-167c-4efe-8bd9-9e06d93ecb44"
+
   payload = {
-    "app_id"             : "bad68d31-19a0-4201-ab14-1607f9a98a8b",
+    "app_id"              : payload_app_id,
+    "small_icon"          : "ic_iconoclasa.png",
+    "include_player_ids"  : [push_info.push_id],
+    "android_sound"       : "coins_received",
+    "contents"            : {
+      "en"    : message
+    },
+    "data"                : data
+  }
+  
+  print( json.dumps(payload))
+    
+  req = requests.post("https://onesignal.com/api/v1/notifications", headers=header, data=json.dumps(payload))
+  print(req.status_code, req.reason)
+
+def send_notification(account_name, message):
+
+  push_info = None
+  with session_scope() as db:
+    push_info = db.query(PushInfo).filter(PushInfo.name == account_name).first()
+    # player_id = pi.push_id if pi else None
+    if push_info:
+      db.expunge(push_info)
+
+  if not push_info:
+    print ('No encontre el player_id de =>', account_name)
+    return
+  
+  print ("FOUND =>", account_name, "=", push_info.push_id )
+  
+  header = {"Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Basic YmRjMjQ2N2UtZDZjNi00ZTM4LTgxMzQtNTZlMTVmZTU1N2I4"}
+
+  payload_app_id = "bad68d31-19a0-4201-ab14-1607f9a98a8b"
+  if push_info.version and str(push_info.version)!='':
+    payload_app_id = "74512457-167c-4efe-8bd9-9e06d93ecb44"
+
+  payload = {
+    "app_id"             : payload_app_id,
     "small_icon"         : "ic_iconoclasa.png",
-    "include_player_ids" : [player_id],
+    "include_player_ids" : [push_info.push_id],
     "android_sound"     : "coins_received",
     #"filters"           : [
     #    {"field": "tag", "key": "account", "relation": "=", "value": account_name}, 
@@ -52,7 +94,7 @@ def send_notification(account_name, message):
       "en" : message
     }
   }
-   
+  
   print( json.dumps(payload))
     
   req = requests.post("https://onesignal.com/api/v1/notifications", headers=header, data=json.dumps(payload))

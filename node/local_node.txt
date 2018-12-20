@@ -1,15 +1,21 @@
 
 
 RUN NODE:
-cd ~/bitshares && programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
+cd ~/bitshares2 && programs/witness_node/witness_node --data-dir data/my-blockprod --genesis-json genesis/my-genesis.json --enable-stale-production --seed-nodes "[]"
 
 RUN WALLET:
-cd ~/bitshares && programs/cli_wallet/cli_wallet --wallet-file my-wallet_new.json --chain-id 1d70881f06a5d2ece91313a00f7eda5e1c7a7183957f3a6539deb4aa95237fe5 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
+cd ~/bitshares2 && programs/cli_wallet/cli_wallet --wallet-file my-wallet_new.json --chain-id 1d70881f06a5d2ece91313a00f7eda5e1c7a7183957f3a6539deb4aa95237fe5 --server-rpc-endpoint ws://127.0.0.1:11011 -u 'kkuser' -p 'supersecret'
 
-programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
 
 cd ~/api/waba_api_bts && PROD=0 python main_v3.py
+cd ~/api/waba_api_bts && PROD=0 python import.py
+cd ~/api/waba_api_bts && PROD=0 python process.py
+cd ~/api/waba_api_bts && PROD=0 python notificator.py
 cd ~/api/waba_api_bts && PROD=0 python3 api.py
+
+---------------------------------------------
+
+programs/cli_wallet/cli_wallet --wallet-file my-wallet.json --chain-id 4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8 --server-rpc-endpoint ws://127.0.0.1:8090 -u 'kkuser' -p 'supersecret'
 
 ---------------------------------------------
 

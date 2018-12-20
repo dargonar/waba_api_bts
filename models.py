@@ -85,6 +85,7 @@ class PushInfo(Base, TimestampMixin):
   id      = Column(Integer, primary_key=True)
   name    = Column(String(128), unique=True)
   push_id = Column(String(256))
+  version = Column(String(128), default='0')
 
 class Block(Base, TimestampMixin):
   __tablename__ = 'block'
