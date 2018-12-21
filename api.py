@@ -1798,13 +1798,108 @@ if __name__ == '__main__':
 #     except Exception as e:
 #       logging.error(traceback.format_exc())
 #       return make_response(jsonify({'error': ERR_UNKNWON_ERROR}), 500)
-  
-  @app.route('/api/v3/business/<account_id>/transactions/list/<skip>/<limit>', methods=['GET', 'POST'])
-  def get_business_transactions_extended(account_id, skip, limit):
-    # return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id, skip, limit) } )
-    return jsonify( get_business_transactions_extended_impl(account_id, skip, limit) )
  
+    # weeks, days, months
+  def get_last_something(something, raw=False):
+    # today = datetime.date.today()
+    # first = today.replace(day=1)
+    _now      = datetime.utcnow()
+    made_now  = datetime(_now.year, _now.month, _now.day)
+    the_day   = None
+    if something=='days':
+      the_day   = (made_now+timedelta(weeks=-1))
+    if something=='weeks':
+      the_day   = (made_now+timedelta(days=-1))
+    if something=='months':
+      from dateutil.relativedelta import relativedelta
+      the_day   = (made_now+relativedelta(months=-1))
+    if raw:
+      return the_day
+    return the_day.strftime('%Y-%m-%d %H:%M:%S')
+
+
+  @app.route('/api/v3/business/<account_id>/kpis', methods=['GET', 'POST'])
+  def get_processed_data(account_id):
+    # subaccounts = [account_id or '1.2.20']
+    subaccounts = [account_id] + business_subaccount_list_impl(account_id, 0, False)['subaccounts']
+    main_asset = cache.get_asset(DISCOIN_ID)
+    with session_scope() as db:
+      q = db.query(Transfer)
+      
+      filter_from = (Transfer.from_id.in_(subaccounts))
+      filter_to   = (Transfer.to_id.in_(subaccounts))
+      my_or       = or_(filter_to, filter_from)
+      q           = q.filter(my_or)
+
+      q           = q.order_by(Transfer.id.desc())
+      count       = q.count()
+      # q           = q.limit(20).offset(0)
+      _last_week_raw  = get_last_something('weeks', True)
+      print(' ----------------------- BIZ KPIs', _last_week_raw)
+      q           = q.filter(Transfer.timestamp>_last_week_raw)
+
+      filter_reward            = (Transfer.tx_type=='refund')
+      filter_discount          = (Transfer.tx_type=='discount')
+      total_rewarded           = db.query(func.sum(Transfer.amount)).filter( filter_reward ).scalar() or 0
+      total_billed_rewarded    = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_reward ).scalar() or 0
+      total_discounted         = db.query(func.sum(Transfer.amount)).filter( filter_discount ).scalar() or 0
+      total_billed_discounted  = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_discount ).scalar() or 0
+      
+      _last_month              = get_last_something('months')
+      monthly_rewards          = db.query(func.sum(Transfer.amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_month).scalar() or 0
+      monthly_billed_rewards   = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_month).scalar() or 0
+      monthly_discounts        = db.query(func.sum(Transfer.amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_month).scalar() or 0
+      monthly_billed_discounts = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_month).scalar() or 0
+
+      _last_week              = get_last_something('weeks')
+      lastw_discounts         = db.query(func.sum(Transfer.amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_week).scalar() or 0
+      lastw_billed_discounts  = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_week).scalar() or 0
+      lastw_rewards           = db.query(func.sum(Transfer.amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_week).scalar() or 0
+      lastw_billed_rewards    = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_week).scalar() or 0
+
+      _last_day               = get_last_something('days')
+      today_discounts         = db.query(func.sum(Transfer.amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_day).scalar() or 0
+      today_billed_discounts  = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_discount ).filter(Transfer.timestamp>_last_day).scalar() or 0
+      today_rewards           = db.query(func.sum(Transfer.amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_day).scalar() or 0
+      today_billed_rewards    = db.query(func.sum(Transfer.tx_bill_amount)).filter( filter_reward ).filter(Transfer.timestamp>_last_day).scalar() or 0
+      
+
+      ret = { 'last_week_txs'   : [ c.to_dict_ex(main_asset) for c in q.all()],
+
+              'total_txs'                 : count,
+              'total_rewarded'            : amount_value(total_rewarded, main_asset),
+              'total_discounted'          : amount_value(total_discounted, main_asset),
+              
+              'total_billed_rewarded'     : total_billed_rewarded,
+              'total_billed_discounted'   : total_billed_discounted,
+              
+              'monthly_discounts'         : amount_value(monthly_discounts, main_asset),
+              'monthly_rewards'           : amount_value(monthly_rewards, main_asset),
+              'monthly_billed_discounts'  : monthly_billed_discounts,
+              'monthly_billed_rewards'    : monthly_billed_rewards,
+
+              'lastw_discounts'           : amount_value(lastw_discounts, main_asset),
+              'lastw_rewards'             : amount_value(lastw_rewards, main_asset),
+              'lastw_billed_discounts'    : lastw_billed_discounts,
+              'lastw_billed_rewards'      : lastw_billed_rewards,
+
+              'today_discounts'           : amount_value(today_discounts, main_asset),
+              'today_rewards'             : amount_value(today_rewards, main_asset),
+              'today_billed_discounts'    : today_billed_discounts,
+              'today_billed_rewards'      : today_billed_rewards
+      }
+      
+      return jsonify(ret)
+    
+
+  # c.count = Session.query(func.count(Person.id)).scalar()
+
+  # c.avg = Session.query(func.avg(Person.id).label('average')).scalar()
+ 
+  # c.sum = Session.query(func.sum(Person.id).label('average')).scalar()
   
+  # c.max = Session.query(func.max(Person.id).label('average')).scalar() 
+
   def get_business_transactions_extended_impl(account_id, skip=0, limit=20):
     
     if not account_id:
@@ -1824,9 +1919,12 @@ if __name__ == '__main__':
       total = q.count()
       q = q.limit(limit).offset(skip)
       return { 'txs': [ c.to_dict_ex(main_asset) for c in q.all()], 'total' : total }
-    
-    # 3- retornamos formateado
-    
+     
+  @app.route('/api/v3/business/<account_id>/transactions/list/<skip>/<limit>', methods=['GET', 'POST'])
+  def get_business_transactions_extended(account_id, skip, limit):
+    # return jsonify( { 'txs' : get_business_transactions_extended_impl(account_id, skip, limit) } )
+    return jsonify( get_business_transactions_extended_impl(account_id, skip, limit) )
+ 
   @app.route('/api/v3/business/<account_id>/transactions/list', methods=['GET', 'POST'])
   def get_business_transactions(account_id):
 #     return jsonify( { 'txs' : get_business_transactions_impl(account_id) } )

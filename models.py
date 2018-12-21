@@ -155,6 +155,11 @@ class Transfer(Base, TimestampMixin):
 
   processed    = Column(Integer, default=0, index=True)
   
+  tx_type         = Column(String(64), index=True)
+  tx_bill_id      = Column(String(128))
+  tx_bill_amount  = Column(Numeric(12,5), index=True) 
+  tx_discount     = Column(Numeric(5,2))
+
   def to_dict(self):
     return {
       'block_id' : self.block_id,
@@ -172,14 +177,22 @@ class Transfer(Base, TimestampMixin):
       'trx_in_block' : self.trx_in_block,
       'op_in_trx' : self.op_in_trx,
       'memo' : self.memo,
-      'processed' : self.processed
+      'processed' : self.processed,
+
+      'tx_type'         : self.tx_type,
+      'tx_bill_id'      : self.tx_bill_id,
+      'tx_bill_amount'  : self.tx_bill_amount,
+      'tx_discount'     : self.tx_discount
     }
   
   def to_dict_ex(self, asset):
-    # required: asset = cache.get_asset(asset_id)
+    return self.to_dict()
+    
+  def to_dict_ex_OLD(self, asset):
     my_amount = amount_value( str(self.amount), asset)
-    # round_decimal(Decimal(self.amount)/100)
-    _memo_obj = decode_memo(self.memo, my_amount, asset)
+    
+    # _memo_obj = decode_memo(self.memo, my_amount, asset)
+    _memo_obj = decode_memo(self.memo, my_amount)
 #     decode_memo(memo_message, _amount, asset)
 #     '_type'       : _type,
 #     'bill_id'     : bill_id,

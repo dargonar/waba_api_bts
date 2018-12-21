@@ -36,6 +36,11 @@ DISCOIN_SYMBOL        = 'THEDISCOIN.M'
 DISCOIN_CREDIT_SYMBOL = 'THEDISCOIN.OD'
 DISCOIN_ACCESS_SYMBOL = 'THEDISCOIN.A'
 
+PREFIX_REWARD_MEMO       = '~re'
+PREFIX_REWARD_MEMO_HEX   = '7e7265'
+PREFIX_DISCOUNT_MEMO     = '~di'
+PREFIX_DISCOUNT_MEMO_HEX = '7e6469'
+
 if homedir=='/home/tuti':
   CHAIN_ID              = '1d70881f06a5d2ece91313a00f7eda5e1c7a7183957f3a6539deb4aa95237fe5'
   DB_URL                = os.environ.get('DB_URL', 'mysql+pymysql://root:248@127.0.0.1/discoin?charset=utf8')
@@ -127,9 +132,12 @@ def try_float(value, default=0.0):
   except:
     return float(default)
   
-def decode_memo(memo_message, _amount, asset):
+def decode_memo(memo_message, _amount, asset=None):
   import hashlib, binascii
-  
+  my_amount = _amount
+  if asset:
+    my_amount = amount_value( str(_amount), asset)
+    
   refund_prefix    = binascii.hexlify('~re:'.encode()).decode('utf-8')
   discount_prefix  = binascii.hexlify('~di:'.encode()).decode('utf-8')
   _type = ''
@@ -165,7 +173,7 @@ def decode_memo(memo_message, _amount, asset):
     bill_id     = _memo_split[2] 
   discount = 0
   if bill_amount>0:
-    discount = round_decimal(Decimal(_amount)*100/bill_amount)
+    discount = round_decimal(Decimal(my_amount)*100/bill_amount)
   return {
     '_type'       : _type,
     'bill_id'     : bill_id,

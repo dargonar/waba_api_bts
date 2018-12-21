@@ -66,6 +66,18 @@ valid_assets = [DISCOIN_ACCESS_ID]
 #   p = rpc.network_broadcast_transaction(tx)
 #   return to_sign
 
+
+def expand_loyalty_tx_memo(t):
+  asset = cache.get_asset(DISCOIN_ID)
+  #my_amount = amount_value( str(self.amount), asset)
+  memo = decode_memo(t.memo, t.amount, asset)
+  t.tx_type         = memo['_type']
+  t.tx_bill_id      = memo['bill_id']
+  t.tx_bill_amount  = memo['bill_amount']
+  t.tx_discount     = memo['discount']
+  
+  return t
+
 def user_applies_authorization(t):
   
   print ('===========================================')
@@ -108,7 +120,6 @@ def user_applies_authorization(t):
     print (' Business Credit salvado ' + t.from_name)
     
 
-    
 def user_transfer_authorizations(t):
   
   to            = t.memo[8:].decode('hex')
@@ -152,6 +163,48 @@ def system_issue_credit(business_credit, reserve_fund):
   print (amount)
   issue_reserve_fund(DISCOIN_ADMIN_NAME, amount)
   print (' ** issued!')
+
+
+
+
+def process_all_loyalty_tx_memo():
+  print(' -------------- init process_all_loyalty_tx_memo()')
+  try:
+    
+    with session_scope() as db:
+      q = db.query(Transfer)
+      q = q.filter(or_(Transfer.memo.like(PREFIX_REWARD_MEMO_HEX+'%'), Transfer.memo.like(PREFIX_DISCOUNT_MEMO_HEX+'%')))
+      q = q.filter(Transfer.amount_asset==DISCOIN_ID)
+      q = q.filter(Transfer.tx_bill_amount==None)
+      q = q.order_by(Transfer.id)
+      q = q.limit(100)
+
+      for t in q.all():
+
+        last_err = None
+
+        try:        
+          t = expand_loyalty_tx_memo(t)
+          t.processed = 1
+
+        except Exception as ex:
+          
+          print ('******************************* %d' % t.id)
+          print (traceback.format_exc())
+
+          t.processed = -1
+          last_err, ok = get_or_create(db, LastError, transfer_id=t.id)
+          last_err.description = str(ex)
+          db.add(last_err)
+
+        finally:
+          db.commit()
+
+  except Exception as ex:
+    print (str(ex))
+    logging.error(traceback.format_exc())
+  print(' -------------- END process_all_loyalty_tx_memo()')
+
   
 def do_process_2():
   try:
@@ -213,11 +266,6 @@ def do_process():
             #el
             if t.memo and t.memo == '~ae'.encode('hex'):
               txid = user_applies_authorization(t)
-            
-            # usuario3 transfiere a gobierno AVAL(i) con memo '~et:nombre'
-            # accion => usuario3 transfiere avales a usuario a.b.c
-#             elif t.memo and t.memo[:8] == '~et:'.encode('hex'):
-#               txid = user_transfer_authorizations(t)
 
             t.processed = 1
   
@@ -229,6 +277,13 @@ def do_process():
             #db.add(last_err)
           
           # Otras transferencias
+          elif t.amount_asset == DISCOIN_ID:
+
+            if t.memo and (t.memo.startswith(PREFIX_REWARD_MEMO_HEX) or t.memo.startswith(PREFIX_DISCOUNT_MEMO_HEX)):
+              t = expand_loyalty_tx_memo(t)
+            
+            t.processed = 1
+
           else:
             t.processed = 1
 
@@ -250,6 +305,7 @@ def do_process():
     logging.error(traceback.format_exc())
 
 if __name__ == "__main__":
+  # process_all_loyalty_tx_memo()
   while True:
     try:
       do_process()
