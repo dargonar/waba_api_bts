@@ -182,12 +182,31 @@ class Transfer(Base, TimestampMixin):
       'tx_type'         : self.tx_type,
       'tx_bill_id'      : self.tx_bill_id,
       'tx_bill_amount'  : self.tx_bill_amount,
-      'tx_discount'     : self.tx_discount
+      'tx_discount'     : self.tx_discount,
+
+
+      'bill_amount'     : tx_bill_amount,
+      'bill_id'         : tx_bill_id,
+      'date'            : convert_date(self.created_at, -3),
+      'discount'        : tx_discount,
+      'from': {
+          'id': self.from_id,
+          'name': self.from_name
+      },
+      'memo': {
+          'message': self.memo,
+          'original': self.memo
+      },
+      'to': {
+          'id': self.to_id,
+          'name': self.to_name,
+      },
+      'type': tx_type
     }
   
   def to_dict_ex(self, asset):
     return self.to_dict()
-    
+
   def to_dict_ex_OLD(self, asset):
     my_amount = amount_value( str(self.amount), asset)
     
