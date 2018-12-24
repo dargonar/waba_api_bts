@@ -201,7 +201,7 @@ class Transfer(Base, TimestampMixin):
           'id': self.to_id,
           'name': self.to_name,
       },
-      'type': tx_type
+      'type': self.tx_type
     }
   
   def to_dict_ex(self, asset):
