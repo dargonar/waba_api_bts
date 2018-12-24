@@ -185,10 +185,10 @@ class Transfer(Base, TimestampMixin):
       'tx_discount'     : self.tx_discount,
 
 
-      'bill_amount'     : tx_bill_amount,
-      'bill_id'         : tx_bill_id,
+      'bill_amount'     : self.tx_bill_amount,
+      'bill_id'         : self.tx_bill_id,
       'date'            : convert_date(self.created_at, -3),
-      'discount'        : tx_discount,
+      'discount'        : self.tx_discount,
       'from': {
           'id': self.from_id,
           'name': self.from_name
