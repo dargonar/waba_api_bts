@@ -21,7 +21,17 @@ class Blockchain(graphene.ObjectType):
   ref_block_prefix = graphene.String()
 
   def resolve_fees(self, args, context, info):
-    return json.dumps(rpc.db_get_global_properties()['parameters']['current_fees'])
+    current_fees = rpc.db_get_global_properties()['parameters']['current_fees']
+
+    #HACK BEGIN - static_Variant en android != servidor
+    y=[]
+    for p in current_fees['parameters']:
+      if p[0]<44: y.append(p)
+    current_fees['parameters'] = y
+    #HACK END
+
+    print(current_fees)
+    return json.dumps(current_fees)
 
   def resolve_ref_block_num(self, args, context, info):
     ref_block_num, ref_block_prefix = ref_block(cache.get_dynamic_global_properties()['head_block_id'])

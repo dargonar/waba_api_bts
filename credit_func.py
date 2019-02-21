@@ -435,14 +435,232 @@ if __name__ == '__main__':
   #  "BTS6ajNfJEZwwm3g83zYy86kGGwcaBhnBdsHMTcDHHZ7AAKyjjLTH"
   #)
 
-  y = multisig_change_keys(
-    "moneda-par.andrea",
-    "BTS8YFwSiJvn1r4oenmft9Hkvy9Rp8s1mzYczXVKtz3McGAmJa6Bm",
-    "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
-    "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
-  )
+  #y = multisig_change_keys(
+  #  "moneda-par.andrea",
+  #  "BTS8YFwSiJvn1r4oenmft9Hkvy9Rp8s1mzYczXVKtz3McGAmJa6Bm",
+  #  "BTS62V2rhWwJefWzri5zs9viBFNScnzAwdLgQAdtvbCjLsyEEoN7o",
+  #  "BTS8SwCfDUC7fQtgKzyQRC5AT7CKB7RxTkhSFRzjdCnTKeetF3PYr"
+  #)
 
-  #accounts_to_issue = {
-  #  "moneda-par.elmercado"    : 30000
+#  y = multisig_change_keys(
+#	"moneda-par.mariocaf",
+#	"BTS7UM4yTeuwx7yWcJC3uXNDUgLfktB2gaa12pzhQHa2ekr8qdUSH",
+#	"BTS8ekzCRDxj3kMa8ZpxD6xYX3k6jyJNn9NRAUMrHeorvJ5B6PVNs",
+#	"BTS5hKYaSA1QNWNGQ1cnkV1atK53nKVxaucuzfYQB24D4tWrDagMJ"
+ # )
+
+
+  #y = multisig_change_keys(
+#	"moneda-par.impa",
+#	"BTS6VxVk7KjFgrgknYxDGKFZSEb8MEpC9oZjRcgazYpEQkPATeE9t",
+#	"BTS5qEg4uzvTEHTBv667SGCG5zAewcyJLJu1NeMz2eN7ukhm1XvzU",
+#	"BTS8Bo36t1gSnQgbYe1dszHLvvkeNRuTG6Sc2KdcagkKZdMDYfobW"
+ # )
+
+ # y = multisig_change_keys(
+#	"moneda-par.dani",
+#	"BTS8LSi1LrEsqFnYNU6nvEacEg4xvH5mnCfnhwNkCnWi7U8ekFeNb",
+#	"BTS65ono92Uvob3FMbkYcutMzfoWraEoTCaTYx4rbEQALDrtgMSFY",
+#	"BTS5JqfqGFwLZobdEt4dp83mJWvsdoJ5a6immWoVC2g8sQgZwusgm"
+#  )
+  
+  
+  #y = multisig_change_keys(
+#	"moneda-par.donadominga",
+#	"BTS7HiB8L5UwtRP7EkQ2oLDcf5kayzvoZo6suntCneB6aiJjwZ8Kf",
+#	"BTS6GNwaR4i2cjAH63c4Y4E3vkWpfZemHEYJ4yZh6hPuAprY6SwjT",
+#	"BTS6dGhoDB5TjZGjhNpK29N9hRxyUcVShS9TxWj9pUdApzAep9JWn"
+ # )
+
+#  y = multisig_change_keys(
+#       "moneda-par.alejandraocampp",
+#       "BTS6ug3ek7BvWuHWPBz2DYTzBy7briH1VNrmSWmTBq8yKr3GhRLGy",
+#       "BTS6UwnYhD5vVhCzmTGyzrPD4B3A5T2hEdRjPQDH7ZM6NwbEvzHSx",
+#       "BTS87iBF12mbwjMYzCnWc29oUmUPuKTePyGoY128C2aDNdL8K8wfz"
+#  )   
+#  y = multisig_change_keys(
+#       "moneda-par.pamelaps",
+#       "BTS5XobFBLoknZAgYC5VBoGLSUwacMrzvw1cP72rLB2zcVNL8mKdr",
+#       "BTS5TSk4vxw1Pi4pinvyqB6KsF2fUm5nzrKsnQjwcRav4VrwECc4U",
+#       "BTS7qbJztjuXBoCcoZbDXUjWKtEe7Mikyp2XLBSe1qtXKimJfKdqm"
+#  ) 
+  #y = multisig_change_keys(
+#	"moneda-par.nodomardelplata",
+#	"BTS6PFdocwBkMf9Hj9wiMFMqQQEEUxPMVkVrcoQQmYapz6wPwqTYQ",
+#	"BTS8K3CUmAQ5qV7nEyJ8KTSUhtVBaK9gxFCqkcYqWMtBcT9iAAzZd",
+#	"BTS8NAUTgPWFHfgVjqYzBpUoYG9TCbY92uGJpur3PuW1LLPQNLhWC"
+ # )
+ # y = multisig_change_keys(
+#	"moneda-par.asdrubal",
+#	"BTS8NcJ4yzVHE18fU1XYJjf1B5dhX9QwFcAc1NnNfmt9AcZr6s5ps",
+#	"BTS5WTigaxjdDck71pbiMJGKJ5oAdWhhacz7mJier2biQ8qyteQMh",
+#	"BTS7azfBJgrL9Gdi4PVejtkajTZxr3k3uPP2F4mph4vp2QucVXfzU"
+ # )
+ # y = multisig_change_keys(
+#	"moneda-par.irma",
+#	"BTS5ZLdfzTKsDQTbCX3jcAs7UtKj7FJECKpLM8ZWia32yBPV6inCV",
+#	"BTS6QF4FSc43YJqGrXN4LYshuX6Szoo8sLoaJLzVFXxyPdnewDwk8",
+#	"BTS4tyB58AQiGFm9em5tRE4L6zMXfDVKd99hwPtBo965BE6j1WkGf"
+ # )
+  #y = multisig_change_keys(
+#		"moneda-par.nodobuenosaires",
+#		"BTS8ci4v7NrQXSA9vwdf9Z5GC4rKb3CgEtdEJgXKWK154SgkpATPQ",
+#		"BTS7uC6dVGc1cL41PCXbWyYTTZRD16Mt4hRnK3eTkoQYMzeftbPbJ",
+#		"BTS8D63rHXcHTNvhSdw6xrKVn9SjHXYXkVHrupp9Nh9EkSVhwPBsL"
+#	) 
+
+  #y = multisig_change_keys(
+#		"moneda-par.asdrubal",
+#		"BTS6dhhExmeiqVbMFLHydi9UFnv9zgtnPPHeoFYbjmNM83SQ3oMKd",
+#		"BTS77skH8AcADiSxvC8kpQsM16AJjRxFZVvbsB2qUNc31rHKhisrg",
+#		"BTS73ABL35CizLekGi3QHBmL7ewQJKjYcVWC6ssbp6zLFLohrADBq"
+#	)
+ # y = multisig_change_keys(
+#		"moneda-par.nodomardelplata",
+#		"BTS6Hfs5iEbpvucBez8auNEuswVQJGcGYWDAcpsiAmWEEpfRi4rhQ",
+#		"BTS7xAikkn4vmwmBP9XYUcMGxA94UEYLN8uB8DYEfadyhcPcJ7a5b",
+#		"BTS7VMS55RG9awaCweEG6DSSYvQDc5GG7CbSYUesb5FQPdbWJr3FK"
+#	)
+  #y = multisig_change_keys(
+#		"moneda-par.nodobuenosaires",
+#		"BTS65udWi51xx1EHJp1XyH1DL29tMgenvNQJ4nfsLdcEdTZFeyefq",
+#		"BTS77wtGTGi31WUp2z98Mi96eQiP8GZuBQ6Hoc4VmcUHAC8so2aae",
+#		"BTS59vSVHqniFr2HyrX4RXAa8bFAKogEpVG5HrhKzgPvZ2qf69S85"
+#	)
+  #y = multisig_change_keys(
+#		"moneda-par.leonelmachado",
+#		"BTS5u4wrkxKiuedTSXBRQUi83i5nLNydCgnRdN5Tj7KcdoYRrL9z8",
+#		"BTS8JibLWyVkVnTgxhwGuGLQC2D9xZeLybnSRKS6K72J7tWZ46dSX",
+#		"BTS6fUJBw8EeudoskZTo1NR2avZGGpsUjvRED3Nv4XJPJY5rsNAbo"
+#	)
+
+ # y = multisig_change_keys(
+#		"moneda-par.lunajorg40",
+#		"BTS6QGKQPv4Ltha5dG6EywUbdJSFenw78BVL8KVQtLZE5zobYbZ9S",
+#		"BTS7vScGXUPCT2EpdjnuU2J5rscdsW5DMpTkbnn9wbXjrYxNythNc",
+#		"BTS5FfASLnWUXuRqiw5dhdU6L4e6qqVeTva631fpZqepKa81T8YGG"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.leomachado",
+#		"BTS73UXsAiwghrtQ6ew9yNceZrNGQG3oJK9EwqmwfbbDDKx65rUfE",
+#		"BTS5xCXTfJ6Yfhqjo3jALq27zDcedRGMv4kfxRUVKGMHzQ6ifsFj5",
+#		"BTS6VxZ6qredcV1Zv9TYtzwpxUXWesVad95RpnNv48GotgysVDpb5"
+#	)
+#  y = multisig_change_keys(
+#	"moneda-par.corinam",
+#	"BTS58mkdR8za3SGr3yias9noHqkHatWyirDojghYdvxFD9cUe1nVh",
+#	"BTS53PL5UCAEDSZKqWsEZwFgJqxLdZ8GxUvB9cmFAsu4QtTHkxNsv",
+#	"BTS8RdBmeifNkkjrahPizj8rBeWb9PwHh22ruLMPG1TktoG8yVpHd"
+#  )
+
+#  y = multisig_change_keys(
+#	"moneda-par.creacionesmarcela",
+#	"BTS8k7XecsxMX4wQ2FGMKNrNnDsPr8WgreTtZKno79NNda1P6k5Mi",
+#	"BTS5jpjws4fQnspAKHMELRyQ2Mn7UChiyAbp6j24whyef5pZ35ioK",
+#	"BTS8gSPrkYNTDnJPWG9336UX6Q5rCyYH9ma5fHa8ks4EpA63JMKEf"
+#  )
+
+ # y = multisig_change_keys(
+#		"moneda-par.nodogualeguaychu",
+#		"BTS6AwtjAqrSoPrmUka43Fa8uaJZ5eaAHy1zDvun6xkJUaXg6UA2r",
+#		"BTS6Hmtw1BG4XKmcp6wHDBo7oS7KjU2S5iJyeUhePrvSWXd72DKsk",
+#		"BTS8CLitjv9CcZGbpYisfvVMnG8JwiMpAeAsuaGt1EadxkGRBXE4H"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.nicoechaniz",
+#		"BTS8jKtEyY55VPwTq8Q3LY8htbZXpXzhovdR3r2dZHX9Ph2MxfcxE",
+#		"BTS8QEBB7JKUSXSDJ68Swp7kdzNTHyHJAYM8P8KgQ2aQ3xW3W56Dq",
+#		"BTS6cBWCA5M6eQovoYuFJ3L6o5yjWA9z6iWPKebqZBeuYNWiZmxKn"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.nodomoreno",
+#		"BTS8SokH4fJNLmfXKJJgz73EaRbKXHMTHRDZrutgnDEygxQN9iQN4",
+#		"BTS5cDR38wPGWBbYHxXKkPEKaiyKoZeYhTE24aknTdHASfUjgBcXb",
+#		"BTS855yELosJLP1mgEd38WTunPLHH7ZcBSVBdHKxyu9ZB3mxQ261v"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.alesole",
+#		"BTS6CF25A7emrqx1CizdeviwqV299MyDc2dWM8b2vSHJuTB1jvypd",
+#		"BTS8YsUEzgTquSsWc6t5csCCLqA1GKDfUo4R8M46EovDzHkLhxTFm",
+#		"BTS4ui6WvDZTPvUUJjGhkRAbQfwQ8k1BGn7FCCPXacxzZxRpjV6WT"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.nodoescobar2",
+#		"BTS4tZFyBhqDYcZ3rP3x38XxasDXbM1SYTGbKxVmkfzUYSWzagPeM",
+#		"BTS8RUqw3iXTGB22C9fwrecr8yjbKhYWpszcjpvhqmpUGrLP6iebu",
+#		"BTS5Wt2LvHHWvFTVUhzmrUcMpZQ8JKi4f3UK7zzG9rGkYR7jFaS2X"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.nodoescobar3",
+#		"BTS6Jn1CNZbADXMxCqwgpy47WL4VdG2P8MhjbZmnbetaNd3KWVqwU",
+#		"BTS8ZGBygKDDj5mxHXPiBvo8N88J6GBipGGrQRaqPkQmirss2hoso",
+#		"BTS6eCuJaddDZvvAHCGMu7Y1Dswp5x12LqbZyfBDAeBgQLtR71NMn"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.establecimientooktubre",
+#		"BTS6JU8NBBFFdHuWjGXddopHArqvjVekkRLRBULQ6c88U88VVJZUG",
+#		"BTS5EztZ3CQGP9VydB7GoFL8MJpVYxfgVCRv1GDFnzivzTi2wcG2k",
+#		"BTS7Sy1GchqaGGmipK4uodoBW6eepKcnr8z1BjhqceoVfxp8RPhJP"
+#	)
+
+#  y = multisig_change_keys(
+#		"moneda-par.belen.escanes",
+#		"BTS8TCS3kzcQaj3qp6pt5jDvkT1URtEGhjGmPkyKF1CQnvN4wWMwR",
+#		"BTS5QgXovuhsakU2JqtEM7MwJgW6SnVLsmNJKKMgQmzMDAyfrY93g",
+#		"BTS6681GcMJWyCwdMbekSk9cZJfPmtLQi6bbKc9bjqzeAGHjiGC87"
+#	)
+# y = multisig_change_keys(
+#		"moneda-par.nodoboedo",
+#		"BTS85XPKPngfaF5mgubwqwCKUDStMY9UCyp2D7WQrCd7oCiA9vHBK",
+#		"BTS8CLaSvwGEdJU4Y6ZYUMWcVzwrz6Udn2Kckn11j3SL6vXkXjSYe",
+#		"BTS6QdaagW3JyDeM8idYhQnxNPErHTVXxbKd68QFUxtYQ3Xo9PF8n"
+#	)
+
+#  y = multisig_change_keys(
+#	"moneda-par.nancy869",
+#	"BTS7QX54GAeRjqyruX4GDStFPuLXxCF7iXew8bTSupUH
+
+#  y = multisig_change_keys(
+#	"moneda-par.susana",
+#	"BTS7jjphGRCNXQnrJtzpFBYqByQDGK2ctS3jnDn192CgDUcRPwR9B",
+#	"BTS6z8UXDFKjvkViiyUCF3YpDRV9aLRdjsakipBRTGfjzPHywPzXw",
+#	"BTS5MLwd5gxPqMeUom1xRCNFHzfG5mdJpva9KL9J76KphBuHiJExs"
+#)
+#  y = multisig_change_keys(
+#	"moneda-par.veroro",
+#	"BTS7iqnX13x88vmqFojBFc2pWqc3kDsjWf1E9jPQpJNZNFYZcpMMt",
+#	"BTS5a3sNwFG9rotBj5b61SyXUPFCheNSH4NwKR5rqx1Q6sYHrDnFD",
+#	"BTS68Jut4X282avzMzAAa5uRiyR9Jx3LNXGhx8KPtMhBctw3TZSUh"
+#)
+
+  y = multisig_change_keys(
+	"moneda-par.edith",
+	"BTS6JV3wDEbudhYEorYmFc7bSJhMhceCpvbWzxYP6yXghEAfvtqDV",
+	"BTS8WRhgoSHP3Pir5A2fwDjM7fjouiB6rv6Achpd4KJQSdUxi7jUw",
+	"BTS7onyfwsDw4cCZ6Tz8wR8iEaDLsqVD8h47SqeNRPA7c25Q2Qnw6"
+)
+  
+  y = multisig_change_keys(
+	"moneda-par.nantili",
+	"BTS8BKFf6FXVKYg2gkV1NzzkcLRSYdjhYarWvF76JMfNCR1YbqDJW",
+	"BTS7hPgdA6cyuGAGtM9daif6Lm5syDoWkTyGa7FA47fefqbhHrXxr",
+	"BTS55P2QtfvQYU4uhuzULZQYUH7SLJoni2qq3e9tf6S9eKPmQ1GTa"
+)
+
+  y = multisig_change_keys(
+	"moneda-par.delfosmet",
+	"BTS68ngDnmQj1aQZ4pcCBZaxG7UNEmc3Si9tSmFYXWtJNFY7m2ep7",
+	"BTS6VbTg6Cn9VX2bTuR43XwVK2o6yW5uhsK3gVivBuqMMiqA9QeMg",
+	"BTS5LSLx7otLtNLeYu3TgDnCW8ybo4qWMmhb4YQb9s1yaSR7wEekc"
+)
+#accounts_to_issue = {
+  ##  "moneda-par.elmercado"    : 30000
   #}
   #multisig_set_overdraft(accounts_to_issue)
